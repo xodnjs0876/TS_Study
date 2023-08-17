@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useGetNotices } from '../../api/api';
-import Glass from "../../../assets/img/MagnifyingGlass.svg"
+import Glass from '../../assets/img/magnifying-glass.svg'
 import NotisList from '../../components/notification/list/notisList';
 import PageMove from '../../components/notification/pagination';
 import CategoryText from '../../components/notification/categoryText';

@@ -4,7 +4,7 @@ import Attach from '../../../assets/img/copy-one.svg'
 import Viewer from '../../../assets/img/preview-open.svg'
 import Liker from "../../../assets/img/like.svg"
 import { DateTime } from "luxon"
-import { INotices, Notice } from '../../../screen/notis/notification';
+import { Notice } from '../../../screen/notis/notification';
 
 interface PropsType {
     edges: Notice[];
@@ -45,6 +45,7 @@ export default function NotisList(data: PropsType) {
                                     {formatNum(item.viewCnt)}
                                 </InfoText>
                                 <span>|</span>
+
                                 <InfoText flexBasis="57px">
                                     <img src={Liker} alt="likeCnt"/>
                                     {formatNum(item.likeCnt)}
@@ -59,6 +60,7 @@ export default function NotisList(data: PropsType) {
 }
 
 const Layout = styled.div`
+    max-height: 120px;
     display:flex;
     overflow:hidden;
     align-items:center;
@@ -80,8 +82,7 @@ const Layout = styled.div`
 const Content = styled.div`
     display: flex;  
     flex-direction: column;
-    gap: 22px;
-    padding: 32px 0 32px 0 ;
+    padding: 18px 0;
     margin-left: 40px;
 `
 
@@ -117,6 +118,7 @@ const Comment = styled.text`
 const PostInfo = styled.div`
     display:flex;
     align-items: center;
+    padding-bottom:8px;
 
     span {
         color: #D8DDE5;;
@@ -140,6 +142,9 @@ const InfoText = styled.text< { flexBasis: string }>`
     font-size: 14px;
     line-height: 14px;
     overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
     padding-top:2px;
     flex-basis: ${props => props.flexBasis};
 `
