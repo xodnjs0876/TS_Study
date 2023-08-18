@@ -9,7 +9,6 @@ interface StyleType {
     color: string;
     fontSize: string;
     fontWeight: string;
-    paddingTop: string;
 }
 
 interface PropsType {
@@ -29,14 +28,14 @@ export default function Title(e: PropsType) {
                 color='#5A33BE' 
                 fontSize='16px' 
                 fontWeight="700"
-                paddingTop="30px">
+                className="category">
                 공지사항
             </Text>
             <Text
             color='#333' 
             fontSize='24px' 
-            fontWeight="500" 
-            paddingTop="18px">
+            fontWeight="500"
+            className="title">
             [{e.data.category}] {e.data.title}
         </Text>
         <InfoText>
@@ -67,15 +66,20 @@ const Layout = styled.div`
     border-bottom: 0.998px solid #D8DDE5;
     padding-left:24px;
     margin-bottom: 50px;
+    .category {
+            padding-top:30px;
+        }
+    .title {
+        padding-top:18px;
+    }
 `
-const Text = styled.text<StyleType>`
+const Text = styled.div<StyleType>`
         color: ${props => props.color};
         font-size: ${props => props.fontSize};
         font-weight: ${props => props.fontWeight};
-        padding-top: ${props => props.paddingTop};
         max-width:1280px;
 `
-const InfoText = styled.text`
+const InfoText = styled.div`
     display: flex;
     align-items: center;
     color: #666;
@@ -90,11 +94,11 @@ const InfoText = styled.text`
         font-style: normal;
         font-weight: 400;
         line-height: 14px;
-        padding:0 12px;
+        padding:0 12px 0 12px;
     }
 `
 
-const FlexText = styled.text`
+const FlexText = styled.div`
     overflow:hidden;
     padding-top:1px;
     display:flex;
