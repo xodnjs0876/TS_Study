@@ -5,59 +5,70 @@ import Viewer from '../../../assets/img/preview-open.svg'
 import Liker from "../../../assets/img/like.svg"
 import { DateTime } from "luxon"
 import { Notice } from '../../../screen/notis/notification';
+import { Link } from 'react-router-dom';
 
 interface PropsType {
     edges: Notice[];
     totalCnt: number;
+    page: number;
 }
 
 export default function NotisList(data: PropsType) {
+    const currentPage = parseInt(data.page as unknown as string, 10) || 1;
 
-    const formatNum = (num: number) => {
+    const formatNum = (num: number) => { 
         return new Intl.NumberFormat('en-US', {
             notation: 'compact',
             maximumFractionDigits: 1,
         }).format(num)
     }
     return (
-        <>
-            {data.edges.map((item: Notice) =>
-                    <Layout key={item.id}>
-                        <span className='id'>{item.id}</span>
-                        <Content>
-                            <Title>
-                                [{item.category}]
-                                <p>{item.title}</p>
-                                {item.file ? (
-                                    <img src={Attach} alt='attachImg'/> ) : null}
-                                    <Comment>
-                                        [{item.commentCnt !==0 ?
-                                            item.commentCnt >= 99 ? ("99+" ): ([item.commentCnt]) : null}]
-                                    </Comment>                          
-                            </Title>
-                            <PostInfo>
-                                <InfoText flexBasis="44px">{item.writer.name}</InfoText>
-                                <span>|</span>
-                                <InfoText flexBasis="92px">{DateTime.fromMillis(item.createdAt).toFormat("yyyy-MM-dd")}</InfoText>
-                                <span>|</span>
-                                <InfoText flexBasis="57px">
-                                    <img src={Viewer} alt='viewCnt'/>
-                                    {formatNum(item.viewCnt)}
-                                </InfoText>
-                                <span>|</span>
+    <div>
+        {data.edges.map((item: Notice, i: number) => {
+            const number = data.totalCnt - i - 10 * (currentPage - 1);
+            return (
+                <div>
+                    <Link to={`/post/${item.id}`} style={{textDecoration : "none"}} >
+                        <Layout key={item.id}>
+                            <span className='id'>{number}</span>
+                            <Content>
+                                <Title>
+                                    [{item.category}]
+                                    <p>{item.title}</p>
+                                    {item.file ? (
+                                        <img src={Attach} alt='attachImg'/> ) : null}
+                                        <Comment>
+                                            [{item.commentCnt !==0 ?
+                                                item.commentCnt >= 99 ? ("99+" ): ([item.commentCnt]) : null}]
+                                        </Comment>                          
+                                </Title>
+                                <PostInfo>
+                                    <InfoText flexBasis="44px">{item.writer.name}</InfoText>
+                                    <span>|</span>
+                                    <InfoText flexBasis="92px">{DateTime.fromMillis(item.createdAt).toFormat("yyyy-MM-dd")}</InfoText>
+                                    <span>|</span>
+                                    <InfoText flexBasis="57px">
+                                        <img src={Viewer} alt='viewCnt'/>
+                                        {formatNum(item.viewCnt)}
+                                    </InfoText>
+                                    <span>|</span>
 
-                                <InfoText flexBasis="57px">
-                                    <img src={Liker} alt="likeCnt"/>
-                                    {formatNum(item.likeCnt)}
-                                </InfoText>
-                            </PostInfo>
-                        </Content>
-                    </Layout>
-                )
-            }
-        </>
+                                    <InfoText flexBasis="57px">
+                                        <img src={Liker} alt="likeCnt"/>
+                                        {formatNum(item.likeCnt)}
+                                    </InfoText>
+                                </PostInfo>
+                            </Content>
+                        </Layout>
+                    </Link>
+                </div>
+            )
+        }
     )
 }
+</div>
+)}
+
 
 const Layout = styled.div`
     max-height: 120px;
