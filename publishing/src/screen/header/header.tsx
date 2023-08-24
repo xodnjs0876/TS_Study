@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Logo from '../../assets/img/klogo.png';
 import Alarm from '../../assets/img/noti.svg';
 import MenuBtn from '../../assets/img/hamburger-button.svg';
+import { Link } from 'react-router-dom';
 
 export default function Header() {
     return (
@@ -15,7 +16,9 @@ export default function Header() {
             </LGBox>
             <MenuBox>
                 <div className='logo'>
-                    <img src={Logo} alt='logo'/>
+                    <Link to="/">
+                        <img src={Logo} alt='logo'/>
+                    </Link>
                 </div>
                 <ul>
                     <li>한국외식산업연구원</li>
@@ -83,8 +86,10 @@ const MenuBox = styled.div`
     .logo {
         display: flex;
         align-items: center;
-        cursor: pointer;
         flex:1;
+    }
+    .logo img {
+        cursor: pointer;
     }
 
     ul {
@@ -118,6 +123,7 @@ const MenuBox = styled.div`
     }
     
     li span {
+        cursor: default;
         padding-left: 30px;
     }
 
