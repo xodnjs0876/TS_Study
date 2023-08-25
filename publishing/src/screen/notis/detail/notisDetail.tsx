@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+/* eslint-disable no-lone-blocks */
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Title from "../../../components/notification/detail/title";
 import { useGetNotice } from "../../../api/api";
@@ -12,6 +13,7 @@ import Scrap from "../../../assets/img/filled-vector.svg";
 import LeftArrow from "../../../assets/img/leftArrow.svg";
 import RightArrow from "../../../assets/img/rightArrow.svg";
 import ListView from "../../../assets/img/listView.svg";
+import { Link, useLocation } from "react-router-dom";
 
 // 타입
 export interface Notice {
@@ -41,25 +43,32 @@ interface UseNotices {
 
 export default function NotisDetail() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { loading, data, error, refetch} = useGetNotice('') as unknown as UseNotices;
-    const [ isLike, setIsLike ] = useState(data?.isLike);
+    const { loading, data, error, refetch} = useGetNotice('id') as unknown as UseNotices;
+    const [ isLike, setIsLike ] = useState(false);
     const [ isScrap, setIsScrap ] = useState(false);
-    const [likes, setLikes] = useState(200);
     const [commentText, setCommentText] = useState("");
+    const location = useLocation().search;
 
+    useEffect(()=>{
+        if(data){
+            setIsLike(data.isLike)
+            setIsScrap(data.isScrap)
+        }
+    },[data])
 
-    console.log("데이타",isLike);
+    const formatNum = (num: number) => { 
+        return new Intl.NumberFormat('en-US', {
+            notation: 'compact',
+            maximumFractionDigits: 1,
+        }).format(num)
+    }
+
     const clickLike = () => {
-        console.log(isLike);
         setIsLike(!isLike);
-        data!.isLike = !isLike;
-        console.log(data!.isLike);
-        // eslint-disable-next-line no-lone-blocks
-        {!isLike ? (setLikes(likes+1)) : (setLikes(likes-1))}
+        {!isLike ? data!.likeCnt += 1 : data!.likeCnt -=1}
     }
     const clickScrap = () => {
         setIsScrap(!isScrap);
-        data!.isScrap = !isScrap;
     }
     const sharePage = () => {
         const shareObject = {
@@ -77,12 +86,10 @@ export default function NotisDetail() {
             .catch((error) => {
                 alert('에러가 발생했습니다.')
             })
-        } else if (navigator.clipboard) {
+        } else if(navigator.clipboard) {
             navigator.clipboard
             .writeText(`${shareObject.url}`)
             .then(() => alert("링크가 클립보드에 복사되었습니다."));
-        } else {
-            alert("공유하기가 지원되지 않는 환경 입니다.");
         }
         }
     const commentTextChange = (e:React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -90,7 +97,7 @@ export default function NotisDetail() {
     } 
     const commentBtn = () => {
         setCommentText("");
-        alert("댓글 등록 완료");
+        alert(commentText);
         refetch();
     } 
     const downloadBtn = () => {
@@ -104,13 +111,13 @@ export default function NotisDetail() {
                             <p className="content" dangerouslySetInnerHTML={{__html: `${data?.content}`}}/>
                             <AttachBox>
                                     <Text>첨부파일</Text>
-                                        {data?.file ? (
+                                        {data?.file && data.file.length > 0 ? (
                                             <div>
                                                 {data?.file.map((item:string,idx:number) =>
                                                     // eslint-disable-next-line eqeqeq
                                                     <DownloadText key={idx} className={idx == 0 ? "first" : ""}>
                                                         <img src={Attach} alt="attach" />
-                                                            <p>2022_외식경영스타_아이디어_공모전_참가신청서_2022외식경영스타_팀명_주제명.PDF</p>
+                                                            <p onClick={downloadBtn}>2022_외식경영스타_아이디어_공모전_참가신청서_2022외식경영스타_팀명_주제명.PDF</p>
                                                         <DownloadBtn onClick={downloadBtn}>
                                                             <span>다운로드</span>
                                                             <img src={Download} alt="download" />
@@ -122,17 +129,17 @@ export default function NotisDetail() {
                             </AttachBox>
                                 <ButtonBox>
                                         <button className="like" onClick={clickLike}>
-                                            {!data?.isLike ?
+                                            {!isLike ?
                                                 (<img src={UnLike} alt="unlike" />) :
                                                 (<img src={Like} alt="like"/>)}
-                                            <span>{likes}</span>
+                                            <span>{formatNum(data?.likeCnt!)}</span>
                                         </button>
                                         <button className="share" onClick={sharePage}>
                                             <img src={Share} alt="share"/>
                                             <span>공유하기</span>
                                         </button>
                                         <button className="scrap" onClick={clickScrap}>
-                                            {!data?.isScrap ?
+                                            {!isScrap ?
                                                 (<img src={UnScrap} alt="unscrap" />) :
                                                 (<img src={Scrap} alt="scrap"/>)}
                                             <span>스크랩</span>
@@ -143,8 +150,8 @@ export default function NotisDetail() {
                 <CommentBox>
                     <CommentText>
                         <span className="commentText">댓글</span>
-                        <span className="commentCnt">0</span>
-                    </CommentText>
+                        <span className="commentCnt">{data?.commentCnt}</span>
+                    </CommentText> 
                     <span className="noComment">등록된 댓글이 없습니다.</span>
                     <CommentTextArea>
                         <textarea
@@ -163,10 +170,12 @@ export default function NotisDetail() {
                         <span className="right">다음글</span>
                         <img src={RightArrow} alt="rightArrow"/>
                     </Button>
+                    <Link to={`/${location}`}>
                     <Button>
                         <img className="listImg" src={ListView} alt="listView" />
                         <span className="left">목록</span>
                     </Button>
+                    </Link>
                 </PageMoveBtn>                           
             </Layout>
     )
