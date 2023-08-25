@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useGetNotices } from '../../api/api';
 import Glass from '../../assets/img/magnifying-glass.svg'
 import NotisList from '../../components/notification/list/notisList';
 import PageMove from '../../components/notification/pagination';
 import CategoryText from '../../components/notification/categoryText';
-
-
+import {useSearchParams} from 'react-router-dom';
 export interface Notice {
     id: string;
     title: string;
@@ -44,14 +43,48 @@ export default function Notification() {
     const { loading, data, error, query } = useGetNotices() as unknown as UseNotices;
     const [inputValue, setInputValue] = useState("");
     const [nowPage, setNowPage] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
+    
+    const search = searchParams.get("search")!;
+    let page:number = parseInt(searchParams.get("page")!,10);
+
+    console.log(error);
 
     const edges = useMemo(()=>{
         return data?.edges;
     },[data]);
 
+    useEffect(() => {
+        if(search == null) {
+            setInputValue("");
+        } else {
+            setInputValue(search);
+        }
+        query({
+            page: page,
+            search: search
+        });
+    },[query, search, page]);
+
     const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
-    }
+    };
+
+    const searchInput = (search: string) => {
+        if(inputValue !== "" && inputValue !== null){
+            searchParams.set('search', `${decodeURI(search)}`);
+            setSearchParams(searchParams);
+        }
+        setNowPage(1);
+    };
+    const pressSearch = () => {
+        query({
+            page: 1,
+            search: inputValue
+        });
+        searchInput(inputValue);
+    };
+
     return (
         <Layout>
             <CategoryText/>
@@ -60,24 +93,30 @@ export default function Notification() {
                         type='text'
                         value={inputValue}
                         onChange={inputChange}
-                        placeholder='검색어를 입력해주세요.'/>
+                        placeholder='검색어를 입력해주세요.'
+                        onKeyDown={e => {
+                            if(e.key === "Enter") {
+                                pressSearch();
+                            }
+                        }}/>
                     <img 
                         src={Glass}
                         alt="glass"
-                        onClick={() => {
-                            query({
-                                page: nowPage,
-                                search: inputValue
-                            });
-                        }}
+                        onClick={pressSearch}
                         />
                 </SearchBar>
                 <div className='list'>
-                    {!loading && edges ? <NotisList edges={edges} totalCnt={data?.totalCnt ?? 0}/> : <span>Loading</span>}
+                    {!loading && edges ? 
+                    <NotisList 
+                        edges={edges} 
+                        totalCnt={data?.totalCnt ?? 0}
+                        page={page}
+                        search={search}
+                        /> : <span>Loading</span>}
                 </div>
                 <PageMove 
-                    totalCnt={data?.totalCnt ?? 0} 
-                    limit={data?.limit ?? 0} 
+                    totalCnt={data?.totalCnt ?? 0}
+                    pages={nowPage}
                     onPageClick={(nowPage:number)=>{
                         query({
                             page:nowPage,
