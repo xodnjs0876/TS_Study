@@ -1,36 +1,129 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import Pagination from "react-js-pagination";
+import { useSearchParams } from 'react-router-dom';
+import FirstArrow from "../../assets/img/firstArrow.svg";
+import PrevArrow from "../../assets/img/prevArrow.svg";
+import LastArrpw from "../../assets/img/lastArrow.svg";
+import nextArrow from "../../assets/img/nextArrow.svg";
 
 interface PropsType {
     onPageClick: (e: number) => void;
     totalCnt:number;
-    limit: number;
+    pages: number;
 }
 
-export default function PageMove(data: PropsType) {
+export default function PageMove({
+    onPageClick,
+    totalCnt,
+    pages
+    }:PropsType)
+    {
 
-    const [btnActive, setBtnActive] = useState(1);
-    console.log(data.totalCnt);
-    
-    const toggleActive = (page:number) => {
-        data.onPageClick(page);
-        setBtnActive(page);
-        console.log(page);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [currentPage, setCurrentPage] = useState(1);
+    const totalPages = Math.ceil(totalCnt/10);
+    let page:number = parseInt(searchParams.get("page")!,10);
+    console.log("검색했을 떄",pages);
+
+    useEffect(() => {
+        if(isNaN(page)){
+            setCurrentPage(1);
+        } else {
+            setCurrentPage(page);
+        }
+    },[page]);
+
+    const changePage = (page:number) => {
+        setCurrentPage(page);
+        movePage(page)
     };
 
+    const movePage = (page: number) => {
+        searchParams.set('page', `${page}`);
+        onPageClick(page);
+        setSearchParams(searchParams);
+    };
+
+    const handleFirstClick = () => {
+        movePage(1);
+        setCurrentPage(1);
+    };
+    const prevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+            movePage(currentPage - 1);
+        }
+    };
+    const nextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+            movePage(currentPage + 1);
+        }
+    };
+
+    const handleLastClick = () => {
+        setCurrentPage(totalPages);
+        movePage(totalPages);
+    };
+
+    const getPageRange = (page: number): number[] => {
+        const start = Math.floor((page - 1) / 5) * 5 + 1;
+        const end = Math.min(start + 4, totalPages);
+        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    };
 
     return (
         <Layout>
-            <Pagination
-                        activePage={btnActive}
-                        itemsCountPerPage={data.limit}
-                        totalItemsCount={data.totalCnt}
-                        pageRangeDisplayed={5}
-                        prevPageText={"<"}
-                        nextPageText={">"}
-                        onChange={toggleActive}
-                    />
+            <ul>
+                <li>
+                    <button
+                        type='button'
+                        disabled={currentPage === 1}
+                        onClick={handleFirstClick}
+                        className='disableBtn'>
+                        <img src={FirstArrow} alt="first" />
+                    </button>
+                </li>
+                <li>
+                    <button
+                        type='button'
+                        disabled={currentPage === 1}
+                        onClick={prevPage}>
+                            <img src={PrevArrow} alt="prev" />
+                    </button>
+                </li>
+                {getPageRange(currentPage).map(page => {
+                    return (
+                        <li key={page} className="h-40 w-40">
+                            <button
+                                type="button"
+                                disabled={page === currentPage}
+                                onClick={() => changePage(page)}
+                                className={page === currentPage ? "active" : ""}
+                            >
+                                {page}
+                            </button>
+                        </li>
+                    );
+                })}
+                <li>
+                    <button
+                        type='button'
+                        disabled={currentPage === totalPages}
+                        onClick={nextPage}>
+                        <img src={nextArrow} alt="next"/>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        type='button'
+                        disabled={currentPage === totalPages}
+                        onClick={handleLastClick}
+                        className='disableBtn'>
+                            <img src={LastArrpw} alt="last" />
+                    </button>
+                </li>
+            </ul>
         </Layout>
     )
 }
@@ -38,46 +131,48 @@ export default function PageMove(data: PropsType) {
 const Layout = styled.div`
     display: flex;
     justify-content: center;
+    align-items: center;
 
-    ul {
-        list-style: none;
+    * {
         padding: 0;
-        display: inline-block;
-        display: flex;
-
-        li {
-        display: inline-block;
-        display: flex;
-        padding: 15px;
-        justify-content: center;
-        align-items: center;
-        font-size: 16px
+        margin: 0;
     }
+    ul {
+        list-style:none;
+        display:flex;
     }
-
-    .active a {
-        color: #5A33BE;
+    li {
+        width:40px;
+        height: 40px;
+    }
+    button {
+        width:40px;
+        height: 40px;
+        border:none;
+        background-color: #fff;
+        color: #9A9A9A;
         text-align: center;
         font-size: 16px;
-        font-style: normal;
         font-weight: 800;
         line-height: 14px; /* 87.5% */
-        text-decoration-line: underline;
-    }
-    a {
-        color:#9A9A9A;
-        font-size: 16px;
-        text-decoration-line: none;
-        font-weight: 600;
-        :hover, .active {
-            color: #5A33BE;
-            text-align: center;
-            font-size: 16px;
-            font-style: normal;
-            font-weight: 800;
-            line-height: 14px; /* 87.5% */
-            text-decoration-line: underline;
+        cursor: pointer;
+        :hover {
+            color:#5A33BE;
+            text-decoration:underline;
         }
     }
-    
+    .active {
+        cursor:default;
+        color:#5A33BE;
+        text-decoration:underline;
+    }
+    button:disabled, 
+    button[disabled]{
+        cursor:default;
+    }
+    .disableBtn:disabled, 
+    .disableBtn[disabled]{
+        cursor:default;
+        visibility:hidden;
+    }
 `
