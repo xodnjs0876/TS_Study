@@ -80,6 +80,8 @@ const ContentBox = styled.div`
     li {
         display: inline-flex;
         white-space: pre;
+        margin-right:12px;
+        cursor: pointer;
 
         :last-child {
             margin-left: 20px;
