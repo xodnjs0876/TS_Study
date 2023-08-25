@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import Attach from '../../../assets/img/copy-one.svg'
 import Viewer from '../../../assets/img/preview-open.svg'
@@ -6,15 +6,22 @@ import Liker from "../../../assets/img/like.svg"
 import { DateTime } from "luxon"
 import { Notice } from '../../../screen/notis/notification';
 import { Link } from 'react-router-dom';
+import highLightText from '../../highLight-Text';
 
 interface PropsType {
     edges: Notice[];
     totalCnt: number;
     page: number;
+    search:string;
 }
 
-export default function NotisList(data: PropsType) {
-    const currentPage = parseInt(data.page as unknown as string, 10) || 1;
+export default function NotisList({
+    edges,
+    totalCnt,
+    page,
+    search
+    }:PropsType) {
+    const currentPage = parseInt(page as unknown as string, 10) || 1;
 
     const formatNum = (num: number) => { 
         return new Intl.NumberFormat('en-US', {
@@ -22,10 +29,11 @@ export default function NotisList(data: PropsType) {
             maximumFractionDigits: 1,
         }).format(num)
     }
+
     return (
     <div>
-        {data.edges.map((item: Notice, i: number) => {
-            const number = data.totalCnt - i - 10 * (currentPage - 1);
+        {edges.map((item: Notice, i: number) => {
+            const number = totalCnt - i - 10 * (currentPage - 1);
             return (
                 <div>
                     <Link to={`/post/${item.id}`} style={{textDecoration : "none"}} >
@@ -34,7 +42,7 @@ export default function NotisList(data: PropsType) {
                             <Content>
                                 <Title>
                                     [{item.category}]
-                                    <p>{item.title}</p>
+                                    <p>{item.title && highLightText(item.title,search)}</p>
                                     {item.file ? (
                                         <img src={Attach} alt='attachImg'/> ) : null}
                                         <Comment>
@@ -117,7 +125,7 @@ const Title = styled.div`
     }
 `
 
-const Comment = styled.text`
+const Comment = styled.span`
     color: #193DD0;
     font-size: 14px;
     font-style: normal;
