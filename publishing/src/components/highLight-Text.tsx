@@ -4,15 +4,33 @@ import styled from "styled-components";
 const highLightText = (title: string, search?:string) => {
     if(search == null) return title;
     if(search !== "" && title.toLowerCase().includes(search.toLowerCase())) {
-        const part = title.split(search);
+        const texts = title.split(new RegExp(`(${search})`, 'gi'));
+
         return (
             <>
-                {part[0]}
-                <Mark>{search}</Mark>
+                {texts.map((text, index) =>
+                    text.toLowerCase() === search.toLowerCase() ? (
+                    <Mark key={index}>
+                    {text}
+                    </Mark>
+                    ) : (
+                    text
+                ),
+                )}
             </>
         )
     }
+    // }
 
+    // if (title.includes(search)) {
+    //     return (
+    //         <>
+    //         {title.split(search)[0]}
+    //         <Mark>{search}</Mark>
+    //         {title.split(search)[1]}
+    //     </>
+    //     )
+    // } 
     return title;
 };
 
