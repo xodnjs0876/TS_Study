@@ -20,17 +20,6 @@ const highLightText = (title: string, search?:string) => {
             </>
         )
     }
-    // }
-
-    // if (title.includes(search)) {
-    //     return (
-    //         <>
-    //         {title.split(search)[0]}
-    //         <Mark>{search}</Mark>
-    //         {title.split(search)[1]}
-    //     </>
-    //     )
-    // } 
     return title;
 };
 
