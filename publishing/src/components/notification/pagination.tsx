@@ -9,13 +9,11 @@ import nextArrow from "../../assets/img/nextArrow.svg";
 interface PropsType {
     onPageClick: (e: number) => void;
     totalCnt:number;
-    pages: number;
 }
 
 export default function PageMove({
     onPageClick,
     totalCnt,
-    pages
     }:PropsType)
     {
 
@@ -23,7 +21,6 @@ export default function PageMove({
     const [currentPage, setCurrentPage] = useState(1);
     const totalPages = Math.ceil(totalCnt/10);
     let page:number = parseInt(searchParams.get("page")!,10);
-    console.log("검색했을 떄",pages);
 
     useEffect(() => {
         if(isNaN(page)){
