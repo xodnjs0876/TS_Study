@@ -1,8 +1,7 @@
 /* eslint-disable no-lone-blocks */
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import Title from "../../../components/notification/detail/title";
-import { useGetNotice } from "../../../api/api";
 import Attach from "../../../assets/img/copy-one.svg";
 import Download from '../../../assets/img/download.svg';
 import Like from "../../../assets/img/filled-like.svg";
@@ -13,62 +12,99 @@ import Scrap from "../../../assets/img/filled-vector.svg";
 import LeftArrow from "../../../assets/img/leftArrow.svg";
 import RightArrow from "../../../assets/img/rightArrow.svg";
 import ListView from "../../../assets/img/listView.svg";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@apollo/client";
+import GET_POST_DATA from "../../../graphql/notice/query/notice-post";
+import CommentDetail from "../../../components/notification/detail/comment";
+import formatNum from "../../../components/format-num";
+import GET_POST_NAVIGATION from "../../../graphql/notice/query/notice-post-navigation";
 
-// 타입
-export interface Notice {
-    id: string;
-    title: string;
-    content: string;
-    category: string;
-    writer: {
+interface FileType {
         id: string;
-        name: string;
-    },
-    createdAt: number,//Milliseconds
-    viewCnt: number,
-    likeCnt: number,
-    commentCnt: number,
-    file: [string] | null,
-    isLike: boolean;
-    isScrap: boolean;
-}
-
-interface UseNotices {
-    loading: Boolean;
-    data: Notice | null;
-    error: null;
-    refetch : () => void;
+        url: string;
+        filename: string;
 }
 
 export default function NotisDetail() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { loading, data, error, refetch} = useGetNotice('id') as unknown as UseNotices;
     const [ isLike, setIsLike ] = useState(false);
     const [ isScrap, setIsScrap ] = useState(false);
     const [commentText, setCommentText] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const search = searchParams.get("search")!;
     const location = useLocation().search;
+    const navigate = useNavigate();
+    let { id } = useParams();
+
+    console.log(location);
+
+    const { loading, data} = useQuery(GET_POST_DATA,{
+        variables: {
+            noticePostId : `${id}`
+        }
+    })
+
+    const { data: navigation } = useQuery(GET_POST_NAVIGATION, {
+        variables: {
+            noticePostNavigationId: `${id}`,
+            params : search && {
+                search: `${search}`,
+            }
+        }
+    })
+
+    const onPostList = () => {
+        return navigate(`/${location}`);
+    }
+
+    const onPrevPost= () => {
+        if (navigation) {
+            if (navigation?.noticePostNavigation.prePostId == null) return ;
+                return navigate(`/post/${navigation.noticePostNavigation.prePostId}`);
+            };
+        return ;
+    }
+    const onNextPost = () => {
+        if (navigation) {
+            if (navigation?.noticePostNavigation.nextPostId == null) return;
+                return navigate(`/post/${navigation.noticePostNavigation.nextPostId}`);
+        }
+        return ;
+    }
+    const ClickFileDownload = useCallback((srcUrl: string, name: string) => {
+        fetch(srcUrl, { method: 'GET' }).then((res) => res.blob()).then((blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            }, 1000);
+            a.remove();
+            }).catch((err) => {
+            console.error('err', err);
+        });
+    }, []);
+
+    const edge = useMemo(() => {
+        return data?.noticePost;
+    },[data]);
 
     useEffect(()=>{
-        if(data){
-            setIsLike(data.isLike)
-            setIsScrap(data.isScrap)
+        if(edge){
+            setIsLike(edge.isLike)
+            setIsScrap(edge.isScrap)
         }
-    },[data])
+    },[edge])
 
-    const formatNum = (num: number) => { 
-        return new Intl.NumberFormat('en-US', {
-            notation: 'compact',
-            maximumFractionDigits: 1,
-        }).format(num)
-    }
 
     const clickLike = () => {
-        setIsLike(!isLike);
-        {!isLike ? data!.likeCnt += 1 : data!.likeCnt -=1}
+        setIsLike(!edge.isLike);
+        {!isLike ? edge!.likeCnt += 1 : edge!.likeCnt -=1}
     }
     const clickScrap = () => {
-        setIsScrap(!isScrap);
+        setIsScrap(!edge.isScrap);
     }
     const sharePage = () => {
         const shareObject = {
@@ -98,41 +134,59 @@ export default function NotisDetail() {
     const commentBtn = () => {
         setCommentText("");
         alert(commentText);
-        refetch();
     } 
-    const downloadBtn = () => {
-        alert("다운로드 완료");
+    if (loading) return  <p> 로딩중 </p>
+
+    if (edge == null) return null;
+    
+    const attach = () => {
+        if(edge.files.length < 1){
+            return (
+                <AttachBox>
+                    <Text>첨부파일</Text>
+                    <span className="noAttach">첨부된 파일이 없습니다.</span> 
+                </AttachBox>
+            )
+        }
+
+        return (
+            <AttachBox>
+                <Text>첨부파일</Text>
+                        <div >
+                            {edge.files.map((file:FileType) => 
+                                <DownloadText className="key" key={file.id}> 
+                                    <img src={Attach} alt="attach" />
+                                        <p onClick={() => ClickFileDownload(file.url,file.filename)}>{file.filename}</p>
+                                    <DownloadBtn onClick={() => ClickFileDownload(file.url,file.filename)}>
+                                        <span>다운로드</span>
+                                        <img src={Download} alt="download" />
+                                    </DownloadBtn>
+                                </DownloadText>
+                            )}
+                            </div>
+                </AttachBox>
+        )
     }
+
     return (
             <Layout>
-                {!loading ? (
                     <Content>
-                        <Title data={data!} />
-                            <p className="content" dangerouslySetInnerHTML={{__html: `${data?.content}`}}/>
-                            <AttachBox>
-                                    <Text>첨부파일</Text>
-                                        {data?.file && data.file.length > 0 ? (
-                                            <div>
-                                                {data?.file.map((item:string,idx:number) =>
-                                                    // eslint-disable-next-line eqeqeq
-                                                    <DownloadText key={idx} className={idx == 0 ? "first" : ""}>
-                                                        <img src={Attach} alt="attach" />
-                                                            <p onClick={downloadBtn}>2022_외식경영스타_아이디어_공모전_참가신청서_2022외식경영스타_팀명_주제명.PDF</p>
-                                                        <DownloadBtn onClick={downloadBtn}>
-                                                            <span>다운로드</span>
-                                                            <img src={Download} alt="download" />
-                                                        </DownloadBtn>
-                                                    </DownloadText>
-                                                )}
-                                            </div>
-                                        ) : <span className="noAttach">첨부된 파일이 없습니다.</span> }
-                            </AttachBox>
+                        <Title 
+                            title={edge.title}
+                            viewCnt={edge.viewCnt}
+                            likeCnt={edge.likeCnt}
+                            createdAt={edge.createAt}
+                            category={edge.category}
+                            author={edge.author}
+                            />
+                            <p className="content" dangerouslySetInnerHTML={{__html: `${edge.content}`}}/>
+                                {attach()}
                                 <ButtonBox>
                                         <button className="like" onClick={clickLike}>
                                             {!isLike ?
                                                 (<img src={UnLike} alt="unlike" />) :
                                                 (<img src={Like} alt="like"/>)}
-                                            <span>{formatNum(data?.likeCnt!)}</span>
+                                            <span>{formatNum(edge?.likeCnt!)}</span>
                                         </button>
                                         <button className="share" onClick={sharePage}>
                                             <img src={Share} alt="share"/>
@@ -146,13 +200,12 @@ export default function NotisDetail() {
                                         </button>
                                 </ButtonBox>
                     </Content>
-                ) : <span> loading </span> }
                 <CommentBox>
                     <CommentText>
                         <span className="commentText">댓글</span>
-                        <span className="commentCnt">{data?.commentCnt}</span>
+                        <span className="commentCnt">{edge.replyCount}</span>
                     </CommentText> 
-                    <span className="noComment">등록된 댓글이 없습니다.</span>
+                    <CommentDetail id={id}/>
                     <CommentTextArea>
                         <textarea
                             value={commentText}
@@ -161,28 +214,34 @@ export default function NotisDetail() {
                             <button onClick={commentBtn}>등록</button>
                     </CommentTextArea>
                 </CommentBox>
+                {navigation?.noticePostNavigation && 
                 <PageMoveBtn>
-                    <Button>
+                    <Button 
+                        disabled={navigation.noticePostNavigation.prePostId == null}
+                        onClick={onPrevPost}>
                         <img src={LeftArrow} alt="leftArrow" />
                         <span className="left">이전글</span>
                     </Button>
-                    <Button className="rightBtn">
+                    <Button 
+                        className="rightBtn"
+                        disabled={navigation.noticePostNavigation.nextPostId == null}
+                        onClick={onNextPost}>
                         <span className="right">다음글</span>
                         <img src={RightArrow} alt="rightArrow"/>
                     </Button>
-                    <Link to={`/${location}`}>
-                    <Button>
+                    <Button onClick={onPostList}>
                         <img className="listImg" src={ListView} alt="listView" />
                         <span className="left">목록</span>
                     </Button>
-                    </Link>
-                </PageMoveBtn>                           
+                </PageMoveBtn>  
+                }                           
             </Layout>
     )
 }
 const Layout = styled.div`
     width:1440px;
     margin: 0 auto;
+    margin-bottom: 100px;
     span {
         display:flex;
         justify-content:center;
@@ -191,12 +250,10 @@ const Layout = styled.div`
 `
 
 const Content = styled.div`
-    p {
-        padding-left:30px;
-        max-width:1280px;
-    }
     .content {
+        margin-left:30px;
         margin-bottom:60px;
+        max-width:1280px;
     }
 `
 
@@ -208,13 +265,19 @@ const AttachBox = styled.div`
     border-radius: 3px;
     border: 1px solid #BFC3C8;
     padding-bottom:12px;
-    .first {
+    .key:not(last-child),
+    .key[last-child] {
         border-bottom:1px solid #D8DDE5;
     }
+    .key:last-child,
+    .key[last-child]{
+        border:none;
+    }
     .noAttach {
-        color: #666;
-        font-size:22px;
-        margin-bottom:40px;
+        color: #888;
+        font-size:18px;
+        text-align: center;
+        margin-bottom:30px;
     }
 `
 
@@ -316,7 +379,6 @@ const CommentBox = styled.div`
         font-style: normal;
         font-weight: 400;
         line-height: 28px; /* 175% */
-        margin-top:80px;
     }
     .noComment {
         margin-bottom:80px;
@@ -325,7 +387,8 @@ const CommentBox = styled.div`
 const CommentText = styled.div`
     display: flex;
     align-items:center;
-    margin:35px 0 0 30px;
+    margin:35px 0 29px 30px;
+
     .commentText {
         color: #333;
         font-family: Pretendard;
@@ -347,12 +410,11 @@ const CommentText = styled.div`
 
 const CommentTextArea = styled.div`
     margin:auto;
-    margin:0 30px;
+    margin:20px 30px 30px 30px;
     border: 1px solid #BFC3C8;
     border-radius: 3px;
     display:flex;
     align-items:flex-start;
-    margin-bottom:30px;
     textarea {
     margin-right:auto;
     color: #000000;    
@@ -393,6 +455,11 @@ const PageMoveBtn = styled.div`
     .rightBtn {
         margin-left: 10px;
         margin-right:auto;
+    }
+    button:disabled, 
+    button[disabled]{
+        cursor:default;
+        opacity:0.8;
     }
 ` 
 
