@@ -1,58 +1,73 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { useGetNotices } from '../../api/api';
 import Glass from '../../assets/img/magnifying-glass.svg'
 import NotisList from '../../components/notification/list/notisList';
 import PageMove from '../../components/notification/pagination';
 import CategoryText from '../../components/notification/categoryText';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import {useQuery } from '@apollo/client';
+import GET_NOTICE_DATA from '../../graphql/notice/query/notice-posts';
+
 export interface Notice {
     id: string;
     title: string;
-    category: string;
-    writer: {
+    category: {
+        name:string;   
         id: string;
+    }
+    author: {
+        email: string;
+        nickname: string;
         name: string;
     },
-    createdAt: number,//Milliseconds
+    createdAt: string,//Milliseconds
     viewCnt: number,
     likeCnt: number,
-    commentCnt: number,
-    file: [string] | null,
+    replyCount: number,
+    isLike: boolean,
+    files: {
+        id: string;
+        url: string;
+        filename: string;
+    } | null;
 }
 export interface INotices {
-    edges: Notice[], //검색된 공지
-    totalCnt: number, //총 공지 개수
-    limit: number,
+    edges: NoticeEdge, //검색된 공지
 }
-
-export interface IQueryParams {
-    page?:number;
-    search?:string;
-}
-
-export interface UseNotices {
-    loading: Boolean;
-    data: INotices | null;
-    error: null;
-    query: (params:IQueryParams) => void ;
-
+export interface NoticeEdge {
+    node:Notice;
 }
 
 export default function Notification() {
-    const { loading, data, error, query } = useGetNotices() as unknown as UseNotices;
+    const [searchParams, setSearchParams] = useSearchParams();
+    const search = searchParams.get("search")!;
     const [inputValue, setInputValue] = useState("");
     const [nowPage, setNowPage] = useState(1);
-    const [searchParams, setSearchParams] = useSearchParams();
-    
-    const search = searchParams.get("search")!;
-    let page:number = parseInt(searchParams.get("page")!,10);
+    const navigate = useNavigate();
+    const location = useLocation().search;
 
-    console.log(error);
+    const {loading, data} =  useQuery(GET_NOTICE_DATA,{
+        variables: {
+            first: 10,
+            offset: 10 * (nowPage - 1),
+            filter: {
+                title: search
+                ? [
+                {
+                    value: `%${search}%`,
+                    operator: "LIKE",
+                },
+                ]
+                : [],
+            }
+        }
+    });
 
     const edges = useMemo(()=>{
-        return data?.edges;
+        return data?.noticePosts?.edges;
     },[data]);
+
+    let page:number = parseInt(searchParams.get("page")!,10) || 1;
 
     useEffect(() => {
         if(search == null) {
@@ -60,11 +75,13 @@ export default function Notification() {
         } else {
             setInputValue(search);
         }
-        query({
-            page: page,
-            search: search
-        });
-    },[query, search, page]);
+
+        if(page == null) {
+            setNowPage(1)
+        } else {
+            setNowPage(page)
+        }
+    },[search, page]);
 
     const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
@@ -75,19 +92,53 @@ export default function Notification() {
             searchParams.set('search', `${decodeURI(search)}`);
             setSearchParams(searchParams);
         }
-        setNowPage(1);
     };
     const pressSearch = () => {
-        query({
-            page: 1,
-            search: inputValue
-        });
+        navigate("/");
+        setNowPage(1);
         searchInput(inputValue);
     };
+
+    if (loading) return <Loading> loading....</Loading>
+
+    const list = () => {
+        if (edges?.length <= 0 && search) {
+            return (
+                <NoSearchWord>'{search}' 에 대한 검색 결과가 없습니다.</NoSearchWord>
+            );
+        }
+
+        return (
+        <div className='list'>
+            {edges && edges.map((edge:NoticeEdge, i:number) => {
+                    const number = data.noticePosts.totalCount - i - 10 * (page - 1);
+                        return (
+                                <NotisList
+                                    key={edge.node.id}
+                                    number={number}
+                                    title={edge.node.title}
+                                    name={edge.node.author?.name}
+                                    category={edge.node.category?.name}
+                                    createdAt={edge.node.createdAt}
+                                    hasFile={edge.node.files === undefined ? false : true}
+                                    viewCount={edge.node.viewCnt}
+                                    likeCount={edge.node.likeCnt}
+                                    commentCount={edge.node.replyCount}
+                                    search={search}
+                                    onClick={() => navigate(`/post/${edge.node.id}${location}`)}
+                                />
+                        )
+                            }
+                        )
+                    }   
+                </div>
+        )
+    }
 
     return (
         <Layout>
             <CategoryText/>
+            <ListInfo>
                 <SearchBar>
                     <input
                         type='text'
@@ -105,24 +156,12 @@ export default function Notification() {
                         onClick={pressSearch}
                         />
                 </SearchBar>
-                <div className='list'>
-                    {!loading && edges ? 
-                    <NotisList 
-                        edges={edges} 
-                        totalCnt={data?.totalCnt ?? 0}
-                        page={page}
-                        search={search}
-                        /> : <span>Loading</span>}
-                </div>
+                </ListInfo>
+                {list()}
                 <PageMove 
-                    totalCnt={data?.totalCnt ?? 0}
-                    pages={nowPage}
-                    onPageClick={(nowPage:number)=>{
-                        query({
-                            page:nowPage,
-                            search:inputValue,
-                        })
-                        setNowPage(nowPage);
+                    totalCnt={data?.noticePosts.totalCount ?? 0}
+                    onPageClick={(page:number)=>{
+                        setNowPage(page);
                     }}
                 />
         </Layout>
@@ -130,17 +169,21 @@ export default function Notification() {
 }
 
 const Layout = styled.div`
-    width: 1440px;
+    width: 1240px;
     margin: 0 auto;
     margin-bottom: 100px;
+    margin-top: 60px;
     text-align: center;
     display: flex;
     flex-direction: column;
 
     .list {
-            border-top: 1px solid #333333;
             margin-bottom: 40px;
     }
+`
+
+const ListInfo = styled.div`
+    border-bottom: 1px solid #333333;
 `
 
 const SearchBar = styled.div`
@@ -172,4 +215,22 @@ const SearchBar = styled.div`
         img {
             cursor:pointer;
         }
+`
+const Loading = styled.div`
+    display:flex;
+    justify-content:center;
+    font-size:30px;
+`
+
+const NoSearchWord = styled.div`
+    display:flex;
+    justify-content:center;
+    color: #888;
+    text-align: center;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 18px; /* 100% */
+    padding:150px 0;
+    border-bottom: 1px solid #D8DDE5;
 `
