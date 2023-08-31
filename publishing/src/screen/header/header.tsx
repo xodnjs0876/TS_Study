@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import Logo from '../../assets/img/klogo.png';
+import Logo from '../../assets/img/logo.svg';
 import Alarm from '../../assets/img/noti.svg';
 import MenuBtn from '../../assets/img/hamburger-button.svg';
 import { Link } from 'react-router-dom';
@@ -10,16 +10,17 @@ export default function Header() {
         <Layout>
             <LGBox>
                 <ul>
-                    <li>로그인/회원가입</li>
+                    <Link to={"/login"} style={{ textDecoration : "none", color: "#fff"} }>
+                        <li>로그인/회원가입</li>
+                    </Link>
                     <li>회원정보찾기</li>
                 </ul>
             </LGBox>
             <MenuBox>
-                <div className='logo'>
+                <Content>
                     <Link to="/">
                         <img src={Logo} alt='logo'/>
                     </Link>
-                </div>
                 <ul>
                     <li>한국외식산업연구원</li>
                     <li>외식정보</li>
@@ -39,6 +40,7 @@ export default function Header() {
                         <img src={MenuBtn} alt='menu_bt'/>
                     </div>
                 </div>
+                </Content>
             </MenuBox>
 
         </Layout>
@@ -47,8 +49,6 @@ export default function Header() {
 
 const Layout = styled.div`
     border-bottom: 1px solid #E7E7E7;
-    margin-bottom: 60px;
-
     * {
         padding: 0;
         margin: 0;
@@ -64,7 +64,7 @@ const LGBox = styled.div`
         display: flex;
         align-items: center;
         justify-content: right;
-        width: 1440px;
+        width: 1240px;
         margin: 0 auto;
         color: #fff;
         font-size:12px;
@@ -77,27 +77,28 @@ const LGBox = styled.div`
     }
 `
 const MenuBox = styled.div`
-    width: 1440px;
+    width: 1240px;
     margin: 0 auto;
     display: flex;
     height: 100px;
     background: #ffffff;
-
-    .logo {
-        display: flex;
-        align-items: center;
-        flex:1;
-    }
+    display:flex;
+    justify-content:center;
+`
+const Content = styled.div`
+    display:flex;
+    justify-content:center;
+    align-items:center;
     .logo img {
         cursor: pointer;
     }
 
     ul {
         display:flex;
-        justify-content:flex-end;
         align-items: center;
         white-space: pre;
         cursor: pointer;
+        margin-left:101px;
     }
 
     li:last-child {
