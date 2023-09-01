@@ -7,7 +7,6 @@ const GET_POST_NAVIGATION = gql`
             nextPostId
             params {
                 search
-                base
             }
         }
     } 
