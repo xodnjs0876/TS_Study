@@ -1,81 +1,76 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import Attach from '../../../assets/img/copy-one.svg'
 import Viewer from '../../../assets/img/preview-open.svg'
 import Liker from "../../../assets/img/like.svg"
-import { DateTime } from "luxon"
-import { Notice } from '../../../screen/notis/notification';
-import { Link } from 'react-router-dom';
 import highLightText from '../../highLight-Text';
+import formatNum from '../../format-num';
+import formatDateTime from '../format-dateTime';
 
 interface PropsType {
-    edges: Notice[];
-    totalCnt: number;
-    page: number;
-    search:string;
+    number?: number;
+    title: string | undefined | null;
+    name?: string | undefined | null;
+    category? : string | undefined | null;
+    createdAt?: string;
+    hasFile?: boolean;
+    viewCount?: number;
+    likeCount?: number;
+    commentCount?: number;
+    search? : string;
+    onClick?: () => void;
 }
 
 export default function NotisList({
-    edges,
-    totalCnt,
-    page,
-    search
-    }:PropsType) {
-    const currentPage = parseInt(page as unknown as string, 10) || 1;
-
-    const formatNum = (num: number) => { 
-        return new Intl.NumberFormat('en-US', {
-            notation: 'compact',
-            maximumFractionDigits: 1,
-        }).format(num)
-    }
+    number,
+    title,
+    name,
+    category,
+    createdAt,
+    hasFile = false,
+    viewCount = 0,
+    likeCount = 0,
+    commentCount = 0,
+    search,
+    onClick,
+}: PropsType) {
 
     return (
-    <div>
-        {edges.map((item: Notice, i: number) => {
-            const number = totalCnt - i - 10 * (currentPage - 1);
-            return (
                 <div>
-                    <Link to={`/post/${item.id}`} style={{textDecoration : "none"}} >
-                        <Layout key={item.id}>
+                        <Layout onClick={() => onClick?.()}>
                             <span className='id'>{number}</span>
                             <Content>
                                 <Title>
-                                    [{item.category}]
-                                    <p>{item.title && highLightText(item.title,search)}</p>
-                                    {item.file ? (
+                                    <p>
+                                        {category ? [category] : null}
+                                        {title && highLightText(title,search)}</p>
+                                    {hasFile ? (
                                         <img src={Attach} alt='attachImg'/> ) : null}
                                         <Comment>
-                                            [{item.commentCnt !==0 ?
-                                                item.commentCnt >= 99 ? ("99+" ): ([item.commentCnt]) : null}]
+                                            {commentCount !== 0 ?
+                                                commentCount >= 99 ? ("[99+]" ): (`[${commentCount}]`) : null}
                                         </Comment>                          
                                 </Title>
                                 <PostInfo>
-                                    <InfoText flexBasis="44px">{item.writer.name}</InfoText>
-                                    <span>|</span>
-                                    <InfoText flexBasis="92px">{DateTime.fromMillis(item.createdAt).toFormat("yyyy-MM-dd")}</InfoText>
-                                    <span>|</span>
-                                    <InfoText flexBasis="57px">
+                                    <span>{name}</span>
+                                    <span className='line'>|</span>
+                                    <span>{ createdAt && formatDateTime(createdAt)}</span>
+                                    <span className='line'>|</span>
+                                    <span>
                                         <img src={Viewer} alt='viewCnt'/>
-                                        {formatNum(item.viewCnt)}
-                                    </InfoText>
-                                    <span>|</span>
-
-                                    <InfoText flexBasis="57px">
+                                        {formatNum(viewCount)}
+                                    </span>
+                                    <span className='line'>|</span>
+                                    <span>
                                         <img src={Liker} alt="likeCnt"/>
-                                        {formatNum(item.likeCnt)}
-                                    </InfoText>
+                                        {formatNum(likeCount)}
+                                    </span>
                                 </PostInfo>
                             </Content>
                         </Layout>
-                    </Link>
                 </div>
             )
         }
-    )
-}
-</div>
-)}
 
 
 const Layout = styled.div`
@@ -85,6 +80,7 @@ const Layout = styled.div`
     align-items:center;
     text-align:center;
     border-bottom: 1px solid #D8DDE5;
+    cursor: pointer;
     .id {
         overflow: hidden;
         display: flex;
@@ -101,8 +97,9 @@ const Layout = styled.div`
 const Content = styled.div`
     display: flex;  
     flex-direction: column;
-    padding: 18px 0;
+    padding: 32px 0;
     margin-left: 40px;
+    gap:24px;
 `
 
 const Title = styled.div`
@@ -119,6 +116,7 @@ const Title = styled.div`
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+        margin:0;
     }
     img {
         padding-left: 10px;
@@ -132,14 +130,30 @@ const Comment = styled.span`
     font-weight: 600;
     line-height: 18px;
     padding-left: 10px;
+    padding-top:2px;
 `
 
 const PostInfo = styled.div`
     display:flex;
-    align-items: center;
-    padding-bottom:8px;
+    justify-content: center;
+    align-items:center;
+    color: #666;
+    font-size: 14px;
+    line-height: 14px;
+    gap: 12px;
 
     span {
+        display:flex;
+        align-items:center;
+        gap: 4px;
+        padding-top:2px;
+
+        img {
+            padding-bottom:2px;
+        }
+    }
+
+    .line {
         color: #D8DDE5;;
         font-size: 12px;
         font-style: normal;
@@ -147,27 +161,6 @@ const PostInfo = styled.div`
         line-height: 14px;
         padding-top: 1px;
     }
-    img {
-        padding-right: 4px;
-        padding-bottom: 3px;
-    }
 `
-
-const InfoText = styled.text< { flexBasis: string }>`
-    display:flex;
-    justify-content: center;
-    align-items:center;
-    color: #666;
-    font-size: 14px;
-    line-height: 14px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-align: left;
-    padding-top:2px;
-    flex-basis: ${props => props.flexBasis};
-`
-
-
 
 
