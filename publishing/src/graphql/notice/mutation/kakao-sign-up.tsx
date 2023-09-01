@@ -7,7 +7,7 @@ mutation SignUpKakao($accessToken: String!) {
             accessToken
         }
         user {
-            phoneNumber
+            id
         }
     }
 }
