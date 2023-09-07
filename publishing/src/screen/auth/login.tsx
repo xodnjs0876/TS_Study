@@ -7,6 +7,8 @@ import Apple from "../../assets/img/apple-login.svg";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useMutation } from "@apollo/client";
 import MUTATION_GOOGLE_SIGN_UP from "../../graphql/notice/mutation/google-sign-up";
+import { useIsLoggedInContext } from "../../components/auth/provider";
+import { useNavigate } from "react-router-dom";
 
 interface StyleType {
     Color: string;
@@ -15,6 +17,8 @@ interface StyleType {
 }
 export default function Login() {
     const [GoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
+    const [isLoggin,setLogin,logout] = useIsLoggedInContext();
+    const navigate = useNavigate();
     const kakaoLogin = () => {
         window.Kakao.Auth.authorize({
             redirectUri: `${process.env.REACT_APP_REDIRECT_URI}`,
@@ -27,20 +31,28 @@ export default function Login() {
     }
     const googleLogin = useGoogleLogin({
         onSuccess: tokenResponse => {
-            console.log(tokenResponse)
-            // try {
-            //     GoogleLogin({
-            //         variables:{
-            //             accessToken: tokenResponse.access_token,
-            //         }
-            //     })
-            // } catch (err) {
-            //     console.log(err)
-            // }
+            try {
+                GoogleLogin({
+                    variables:{
+                        accessToken: tokenResponse.access_token,
+                    }
+                })
+                .then(res => {
+                    if(res.data.signUpGoogle.user.id){
+                        setLogin(`${res.data.signUpGoogle.token.accessToken}`)
+                        navigate("/",{
+                            replace:true,
+                            
+                        })
+                    }
+                })
+            } catch (err) {
+                console.log("에러",err)
+            }
     },
     onError: errorResponse => {
         if (errorResponse.error_description) {
-            console.log(errorResponse.error_description)
+            console.log("에러입",errorResponse.error_description)
         }
     }
     })
