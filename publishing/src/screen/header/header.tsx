@@ -3,18 +3,37 @@ import styled from 'styled-components';
 import Logo from '../../assets/img/logo.svg';
 import Alarm from '../../assets/img/noti.svg';
 import MenuBtn from '../../assets/img/hamburger-button.svg';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useIsLoggedInContext } from '../../components/auth/provider';
+import { removeCookie } from '../../components/cookie';
+import { client } from '../..';
 
 export default function Header() {
+    
+    const navigate = useNavigate();
+    const [isLoggin,setLogin,logout] = useIsLoggedInContext();
+    const logoutEvent = () => {
+        client.clearStore();
+        logout();
+        // removeCookie("userID");
+        // window.location.reload();
+    }
+
     return (
         <Layout>
             <LGBox>
+                {!isLoggin ?
                 <ul>
-                    <Link to={"/login"} style={{ textDecoration : "none", color: "#fff"} }>
+                    <Link to={"/oauth/"} style={{ textDecoration : "none", color: "#fff"} }>
                         <li>로그인/회원가입</li>
                     </Link>
                     <li>회원정보찾기</li>
                 </ul>
+                : 
+                <ul>
+                    <li>마이페이지</li>
+                    <li onClick={logoutEvent}>로그아웃</li>
+                </ul>}
             </LGBox>
             <MenuBox>
                 <Content>
