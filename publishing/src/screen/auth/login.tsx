@@ -1,9 +1,12 @@
-import React,{Component} from "react";
+import React, { useEffect } from "react";
 import { styled } from "styled-components";
 import KaKao from "../../assets/img/kakao-login.svg";
 import Naver from "../../assets/img/naver-login.svg";
 import Google from "../../assets/img/google-login.svg";
 import Apple from "../../assets/img/apple-login.svg";
+import { useGoogleLogin } from "@react-oauth/google";
+import { useMutation } from "@apollo/client";
+import MUTATION_GOOGLE_SIGN_UP from "../../graphql/notice/mutation/google-sign-up";
 
 interface StyleType {
     Color: string;
@@ -11,16 +14,37 @@ interface StyleType {
     Border: string;
 }
 export default function Login() {
-
-    const { Kakao } = window;
-
-    const loginKakao = () => {
-        Kakao.Auth.authorize({
-            redirectUri: window.location.origin + "/oauth/",
-            prompt: "select_account",
-        });
+    const [GoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
+    const kakaoLogin = () => {
+        window.Kakao.Auth.authorize({
+            redirectUri: `${process.env.REACT_APP_REDIRECT_URI}`,
+            prompt:'select_account',
+        })
+    }
+    const naverLogin = () => {
+        const url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${process.env.REACT_APP_NAVER_API_KEY}&state=false&redirect_uri=http://localhost:3000/oauth/naver`;
+        window.location.href = url;
+    }
+    const googleLogin = useGoogleLogin({
+        onSuccess: tokenResponse => {
+            console.log(tokenResponse)
+            // try {
+            //     GoogleLogin({
+            //         variables:{
+            //             accessToken: tokenResponse.access_token,
+            //         }
+            //     })
+            // } catch (err) {
+            //     console.log(err)
+            // }
+    },
+    onError: errorResponse => {
+        if (errorResponse.error_description) {
+            console.log(errorResponse.error_description)
         }
-    
+    }
+    })
+
     return (
         <Layout>
             <LoginBox>
@@ -53,19 +77,23 @@ export default function Login() {
                 </DefaultButton>
                 <SocialLogin>
                     <SocialButton
-                        onClick={loginKakao}
+                        onClick={() => {
+                            kakaoLogin()
+                        }}
                         Color="#FEE500"
                         Radius="8px"
                         Border="none">
                         <img src={KaKao} alt="kakao" />
                     </SocialButton>
                     <SocialButton 
+                        onClick={naverLogin}
                         Color="#03C75A"
                         Radius="4px"
                         Border="none">
                         <img src={Naver} alt="naver" />
                     </SocialButton>
                     <SocialButton 
+                        onClick={() => googleLogin()}
                         Color="#fff"
                         Border="0.5px solid #2C2C2C"
                         Radius="3px">
