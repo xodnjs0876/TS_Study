@@ -1,9 +1,9 @@
 import React from "react";
 import { styled } from "styled-components";
-import NotisDetail from "./screen/notis/detail/notisDetail";
+import NotisDetail from "./screen/notis/detail/notice-detail";
 import Notification from "./screen/notis/notification";
 import { Route, Routes } from "react-router-dom";
-import MainLayout from "./components/mainLayout";
+import MainLayout from "./components/main-layout";
 import Login from "./screen/auth/login";
 import KaKaoRedirect from "./screen/auth/kakao";
 import { AuthProvider } from "./components/auth/provider";

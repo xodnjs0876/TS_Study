@@ -3,7 +3,7 @@ import styled from "styled-components";
 import Viewer from "../../../assets/img/preview-open.svg";
 import Liker from "../../../assets/img/like.svg";
 import formatNum from "../../format-num";
-import formatDateTime from "../format-dateTime";
+import formatDateTime from "../format-date-time";
 
 interface StyleType {
   color: string;

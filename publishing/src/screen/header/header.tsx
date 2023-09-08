@@ -8,8 +8,7 @@ import { useIsLoggedInContext } from "../../components/auth/provider";
 import { client } from "../..";
 
 export default function Header() {
-  const navigate = useNavigate();
-  const [isLoggin, setLogin, logout] = useIsLoggedInContext();
+  const [isLoggin, , logout] = useIsLoggedInContext();
   const logoutEvent = () => {
     client.clearStore();
     logout();

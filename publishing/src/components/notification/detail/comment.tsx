@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { styled } from "styled-components";
 import GET_POSTREPLIES_DATE from "../../../graphql/notice/query/notice-post-replies";
 import { useQuery } from "@apollo/client";
-import formatDateTime from "../format-dateTime";
+import formatDateTime from "../format-date-time";
 import maskingName from "../../masking-name";
 import L from "../../../assets/img/l.svg";
 

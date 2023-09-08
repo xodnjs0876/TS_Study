@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import Glass from "../../assets/img/magnifying-glass.svg";
-import NotisList from "../../components/notification/list/notisList";
+import NotisList from "../../components/notification/list/notice-list";
 import PageMove from "../../components/notification/pagination";
-import CategoryText from "../../components/notification/categoryText";
+import CategoryText from "../../components/notification/category-text";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@apollo/client";
 import GET_NOTICE_DATA from "../../graphql/notice/query/notice-posts";
