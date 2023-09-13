@@ -20,5 +20,25 @@
   src: url("./assets/fonts/Pretendard-Regular.otf") format("opentype"),
     url("./assets/fonts/Pretendard-Regular.woff2") format("woff2"),
     url("./assets/fonts/Pretendard-Regular.woff") format("woff"),
-    url("./assets/fonts/Pretendard-Medium.ttf") format("truetype");
+    url("./assets/fonts/Pretendard-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/Pretendard-Bold.otf") format("opentype"),
+    url("./assets/fonts/Pretendard-Bold.woff2") format("woff2"),
+    url("./assets/fonts/Pretendard-Bold.woff") format("woff"),
+    url("./assets/fonts/Pretendard-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/Pretendard-SemiBold.otf") format("opentype"),
+    url("./assets/fonts/Pretendard-SemiBold.woff2") format("woff2"),
+    url("./assets/fonts/Pretendard-SemiBold.woff") format("woff"),
+    url("./assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
 }
