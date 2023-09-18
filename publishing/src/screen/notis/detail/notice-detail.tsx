@@ -106,12 +106,12 @@ export default function NotisDetail() {
     }
   }, [edge]);
 
-  // const clickLike = () => {
-  //   setIsLike(!edge.isLike);
-  //   {
-  //     !isLike ? (edge!.likeCnt += 1) : (edge!.likeCnt -= 1);
-  //   }
-  // };
+  const clickLike = () => {
+    setIsLike(!edge.isLike);
+    {
+      !isLike ? (edge!.likeCnt += 1) : (edge!.likeCnt -= 1);
+    }
+  };
   const clickScrap = () => {
     setIsScrap(!edge.isScrap);
   };
@@ -202,7 +202,7 @@ export default function NotisDetail() {
         />
         {attach()}
         <ButtonBox>
-          <button className="like">
+          <button className="like" onClick={clickLike}>
             {!isLike ? (
               <img src={UnLike} alt="unlike" />
             ) : (
