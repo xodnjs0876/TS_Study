@@ -3,7 +3,6 @@ import styled from "styled-components";
 import Logo from "../../assets/img/logo.svg";
 import Alarm from "../../assets/img/noti.svg";
 import MenuBtn from "../../assets/img/hamburger-button.svg";
-import { Link, useNavigate } from "react-router-dom";
 import { useIsLoggedInContext } from "../../components/auth/provider";
 import { client } from "../..";
 
@@ -19,12 +18,9 @@ export default function Header() {
       <LGBox>
         {!isLoggin ? (
           <ul>
-            <Link
-              to={"/oauth/"}
-              style={{ textDecoration: "none", color: "#fff" }}
-            >
-              <li>로그인/회원가입</li>
-            </Link>
+            <li>
+              <a href="/oauth">로그인/회원가입</a>
+            </li>
             <li>회원정보찾기</li>
           </ul>
         ) : (
@@ -36,9 +32,9 @@ export default function Header() {
       </LGBox>
       <MenuBox>
         <Content>
-          <Link to="/">
+          <a href="/">
             <img src={Logo} alt="logo" />
-          </Link>
+          </a>
           <ul>
             <li>한국외식산업연구원</li>
             <li>외식정보</li>
@@ -91,6 +87,11 @@ const LGBox = styled.div`
   li {
     padding-left: 20px;
     cursor: pointer;
+
+    a {
+      color: #fff;
+      text-decoration: none;
+    }
   }
 `;
 const MenuBox = styled.div`
