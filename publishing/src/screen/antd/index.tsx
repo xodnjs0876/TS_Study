@@ -13,6 +13,7 @@ import { Layout, Menu, theme, MenuProps } from "antd";
 
 const { Header, Content, Footer, Sider } = Layout;
 
+//아이콘 갯수 = item 수
 const items: MenuProps["items"] = [
   AppstoreOutlined,
   BarChartOutlined,
@@ -45,7 +46,7 @@ export default function Test() {
           bottom: 0,
         }}
       >
-        <div className="demo-logo-vertical" />
+        {/* <div className="demo-logo-vertical" /> */}
         <Menu
           theme="dark"
           mode="inline"

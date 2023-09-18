@@ -11,9 +11,9 @@ import { useIsLoggedInContext } from "../../components/auth/provider";
 import { useNavigate } from "react-router-dom";
 
 interface StyleType {
-  Color: string;
-  Radius: string;
-  Border: string;
+  $Color: string;
+  $Radius: string;
+  $Border: string;
 }
 export default function Login() {
   const [MutationGoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
@@ -32,28 +32,19 @@ export default function Login() {
     window.location.href = url;
   };
   const googleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      try {
-        MutationGoogleLogin({
-          variables: {
-            accessToken: tokenResponse.access_token,
-          },
-        }).then((res) => {
-          if (res.data.signUpGoogle.user.id) {
-            setLogin(res.data.signUpGoogle.token.accessToken);
-            navigate("/", {
-              replace: true,
-            });
-          }
-        });
-      } catch (err) {
-        console.log("에러", err);
-      }
+    onSuccess: async (tokenResponse) => {
+      const GoogleAccessToken = await MutationGoogleLogin({
+        variables: {
+          accessToken: tokenResponse.access_token,
+        },
+      });
+      setLogin(GoogleAccessToken.data.signUpGoogle.token.accessToken);
+      navigate("/", {
+        replace: true,
+      });
     },
     onError: (errorResponse) => {
-      if (errorResponse.error_description) {
-        console.log("에러입", errorResponse.error_description);
-      }
+      alert("에러다");
     },
   });
 
@@ -69,7 +60,7 @@ export default function Login() {
         </Title>
         <Input type="text" placeholder="이메일 주소를 입력하세요." />
         <Input
-          type="text"
+          type="password"
           placeholder="비밀번호를 입력하세요."
           className="password"
         />
@@ -83,30 +74,30 @@ export default function Login() {
             onClick={() => {
               kakaoLogin();
             }}
-            Color="#FEE500"
-            Radius="8px"
-            Border="none"
+            $Color="#FEE500"
+            $Radius="8px"
+            $Border="none"
           >
             <img src={KaKao} alt="kakao" />
           </SocialButton>
           <SocialButton
             onClick={naverLogin}
-            Color="#03C75A"
-            Radius="4px"
-            Border="none"
+            $Color="#03C75A"
+            $Radius="4px"
+            $Border="none"
           >
             <img src={Naver} alt="naver" />
           </SocialButton>
           <SocialButton
             onClick={() => googleLogin()}
-            Color="#fff"
-            Border="0.5px solid #2C2C2C"
-            Radius="3px"
+            $Color="#fff"
+            $Border="0.5px solid #2C2C2C"
+            $Radius="3px"
           >
             <img src={Google} alt="google" />
             <span className="google">Google로 로그인</span>
           </SocialButton>
-          <SocialButton Color="#000" Border="none" Radius="5px">
+          <SocialButton $Color="#000" $Border="none" $Radius="5px">
             <img src={Apple} alt="apple" />
           </SocialButton>
         </SocialLogin>
@@ -243,9 +234,9 @@ const SocialButton = styled.button<StyleType>`
   align-items: center;
   cursor: pointer;
   width: 100%;
-  background-color: ${(props) => props.Color};
-  border: ${(props) => props.Border};
-  border-radius: ${(props) => props.Radius};
+  background-color: ${(props) => props.$Color};
+  border: ${(props) => props.$Border};
+  border-radius: ${(props) => props.$Radius};
   height: 48px;
   margin-bottom: 10px;
   .google {
@@ -257,7 +248,3 @@ const SocialButton = styled.button<StyleType>`
     line-height: normal;
   }
 `;
-
-function componentDidMount() {
-  throw new Error("Function not implemented.");
-}

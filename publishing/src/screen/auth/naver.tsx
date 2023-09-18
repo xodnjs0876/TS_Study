@@ -7,7 +7,7 @@ import { useIsLoggedInContext } from "../../components/auth/provider";
 export default function NaverRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSeratchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const [, setLogin] = useIsLoggedInContext();
@@ -42,7 +42,7 @@ export default function NaverRedirect() {
   });
 
   const getNaverToken = async (): Promise<string> => {
-    return new Promise((resovle, reject) => {
+    return new Promise((resolve, reject) => {
       fetch(
         `/oauth2.0/token?grant_type=authorization_code&client_id=${process.env.REACT_APP_NAVER_API_KEY}&client_secret=${process.env.REACT_APP_NAVER_SECRET_KEY}&code=${code}&state=${state}`,
         {
@@ -52,7 +52,7 @@ export default function NaverRedirect() {
         .then((res) => res.json())
         .then((data) => {
           if (data) {
-            resovle(data.access_token);
+            resolve(data.access_token);
           } else {
             console.log("나는 토큰 데이타", data);
             reject(new Error("나는 토큰 데이타"));
