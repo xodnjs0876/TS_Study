@@ -36,7 +36,7 @@ export default function Introduce() {
             fontWeight: 400,
           }}
         >
-          산업에 관한 정보제공 및 연구기능에 중추적 역할을 담당한다.
+          산업에 관한 정보제공 및 연구기능에 중추적 역할을 담당한다.ㅇ
         </span>
       </p>
       <div

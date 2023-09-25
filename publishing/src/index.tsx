@@ -5,9 +5,10 @@ import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter } from "react-router-dom";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import "./index.css";
 
 export const client = new ApolloClient({
-  uri: process.env.REACT_APP_BASE_URL,
+  uri: "http://211.110.139.183:5900/graphql",
   cache: new InMemoryCache({}),
 });
 

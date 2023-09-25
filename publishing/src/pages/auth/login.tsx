@@ -1,12 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { styled } from "styled-components";
 import KaKao from "../../assets/img/kakao-login.svg";
 import Naver from "../../assets/img/naver-login.svg";
 import Google from "../../assets/img/google-login.svg";
 import Apple from "../../assets/img/apple-login.svg";
-import { useGoogleLogin } from "@react-oauth/google";
 import { useMutation } from "@apollo/client";
-import MUTATION_GOOGLE_SIGN_UP from "../../graphql/notice/mutation/google-sign-up";
 import { useIsLoggedInContext } from "../../components/auth/provider";
 import { useNavigate } from "react-router-dom";
 
@@ -16,47 +14,73 @@ interface StyleType {
   Border: string;
 }
 export default function Login() {
-  const [MutationGoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
+  // const [MutationGoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
 
   const [, setLogin] = useIsLoggedInContext();
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  // const navigate = useNavigate();
 
-  const kakaoLogin = () => {
-    window.Kakao.Auth.authorize({
-      redirectUri: `${process.env.REACT_APP_REDIRECT_URI}`,
-      prompt: "select_account",
-    });
-  };
-  const naverLogin = () => {
-    const url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${process.env.REACT_APP_NAVER_API_KEY}&state=false&redirect_uri=http://localhost:3000/oauth/naver`;
-    window.location.href = url;
-  };
-  const googleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      try {
-        MutationGoogleLogin({
-          variables: {
-            accessToken: tokenResponse.access_token,
-          },
-        }).then((res) => {
-          if (res.data.signUpGoogle.user.id) {
-            setLogin(res.data.signUpGoogle.token.accessToken);
-            navigate("/", {
-              replace: true,
-            });
-          }
-        });
-      } catch (err) {
-        console.log("에러", err);
-      }
-    },
-    onError: (errorResponse) => {
-      if (errorResponse.error_description) {
-        console.log("에러입", errorResponse.error_description);
-      }
-    },
-  });
+  // const kakaoLogin = () => {
+  //   window.Kakao.Auth.authorize({
+  //     redirectUri: `${process.env.REACT_APP_REDIRECT_URI}`,
+  //     prompt: "select_account",
+  //   });
+  // };
+  // const naverLogin = () => {
+  //   const url = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${process.env.REACT_APP_NAVER_API_KEY}&state=false&redirect_uri=http://localhost:3000/oauth/naver`;
+  //   window.location.href = url;
+  // };
+  // const googleLogin = useGoogleLogin({
+  //   onSuccess: (tokenResponse) => {
+  //     try {
+  //       MutationGoogleLogin({
+  //         variables: {
+  //           accessToken: tokenResponse.access_token,
+  //         },
+  //       }).then((res) => {
+  //         if (res.data.signUpGoogle.user.id) {
+  //           setLogin(res.data.signUpGoogle.token.accessToken);
+  //           navigate("/", {
+  //             replace: true,
+  //           });
+  //         }
+  //       });
+  //     } catch (err) {
+  //       console.log("에러", err);
+  //     }
+  //   },
+  //   onError: (errorResponse) => {
+  //     if (errorResponse.error_description) {
+  //       console.log("에러입", errorResponse.error_description);
+  //     }
+  //   },
+  // });
 
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   try {
+  //     const { data: signData } = await signIn({
+  //       fetchPolicy: "no-cache",
+  //       variables: {
+  //         loginId: e. as string,
+  //         password: formData.password as string,
+  //       },
+  //     });
+  //     if (signData) {
+  //       Authentication.setToken(signData.signIn);
+  //       await client.resetStore();
+  //       router.back();
+  //     } else {
+  //       throw new Error("로그인에 실패하였습니다.");
+  //     }
+  //   } catch (error) {
+  //     setIsError(true);
+  //     if (error instanceof Error && isApolloError(error)) {
+  //       Alert.alert(error.message, "오류");
+  //     }
+  //   }
+  // };
   return (
     <Layout>
       <LoginBox>
@@ -67,42 +91,34 @@ export default function Login() {
           <strong>K-FIRI 한국외식산업연구원</strong>
           입니다.
         </Title>
-        <Input type="text" placeholder="이메일 주소를 입력하세요." />
-        <Input
-          type="text"
-          placeholder="비밀번호를 입력하세요."
-          className="password"
-        />
-        <LoginButton>로그인</LoginButton>
+        <Form>
+          <Input
+            type="text"
+            placeholder="이메일 주소를 입력하세요."
+            value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)}
+          />
+          <Input
+            type="text"
+            placeholder="비밀번호를 입력하세요."
+            className="password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
+          <LoginButton type="submit">로그인</LoginButton>
+        </Form>
         <DefaultButton className="button">
           <button>회원정보찾기</button>
           <button>이메일 회원가입</button>
         </DefaultButton>
         <SocialLogin>
-          <SocialButton
-            onClick={() => {
-              kakaoLogin();
-            }}
-            Color="#FEE500"
-            Radius="8px"
-            Border="none"
-          >
+          <SocialButton Color="#FEE500" Radius="8px" Border="none">
             <img src={KaKao} alt="kakao" />
           </SocialButton>
-          <SocialButton
-            onClick={naverLogin}
-            Color="#03C75A"
-            Radius="4px"
-            Border="none"
-          >
+          <SocialButton Color="#03C75A" Radius="4px" Border="none">
             <img src={Naver} alt="naver" />
           </SocialButton>
-          <SocialButton
-            onClick={() => googleLogin()}
-            Color="#fff"
-            Border="0.5px solid #2C2C2C"
-            Radius="3px"
-          >
+          <SocialButton Color="#fff" Border="0.5px solid #2C2C2C" Radius="3px">
             <img src={Google} alt="google" />
             <span className="google">Google로 로그인</span>
           </SocialButton>
@@ -165,7 +181,10 @@ const Title = styled.div`
   font-weight: 700;
   line-height: 30px; /* 150% */
 `;
-
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+`;
 const Input = styled.input`
   margin: 0 auto;
   margin-bottom: 10px;
@@ -257,7 +276,3 @@ const SocialButton = styled.button<StyleType>`
     line-height: normal;
   }
 `;
-
-function componentDidMount() {
-  throw new Error("Function not implemented.");
-}

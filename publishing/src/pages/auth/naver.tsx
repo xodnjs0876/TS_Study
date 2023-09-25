@@ -7,7 +7,7 @@ import { useIsLoggedInContext } from "../../components/auth/provider";
 export default function NaverRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSeratchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const [, setLogin] = useIsLoggedInContext();
