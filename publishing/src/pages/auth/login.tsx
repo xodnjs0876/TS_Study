@@ -4,9 +4,9 @@ import KaKao from "../../assets/img/kakao-login.svg";
 import Naver from "../../assets/img/naver-login.svg";
 import Google from "../../assets/img/google-login.svg";
 import Apple from "../../assets/img/apple-login.svg";
-import { useMutation } from "@apollo/client";
-import { useIsLoggedInContext } from "../../components/auth/provider";
-import { useNavigate } from "react-router-dom";
+// import { useIsLoggedInContext } from "../../components/auth/provider";
+// import { useMutation } from "@apollo/client";
+// import { useNavigate } from "react-router-dom";
 
 interface StyleType {
   Color: string;
@@ -16,7 +16,7 @@ interface StyleType {
 export default function Login() {
   // const [MutationGoogleLogin] = useMutation(MUTATION_GOOGLE_SIGN_UP);
 
-  const [, setLogin] = useIsLoggedInContext();
+  // const [, setLogin] = useIsLoggedInContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // const navigate = useNavigate();
