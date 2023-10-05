@@ -6,7 +6,7 @@ import Modal from "../../components/pre-owned.tsx/modal";
 import { styled } from "styled-components";
 import { useQuery } from "@apollo/client";
 import BUSINESSCHATCHANNELS from "../../graphql/notice/query/business-chat-channel";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const secondHandState = {
   ACTIVE: "판매중",
@@ -90,7 +90,7 @@ export default function ChatDetail() {
               <div className="line"></div>
               <button
                 onClick={() => {
-                  window.confirm("신고하시겠습니끼?");
+                  window.confirm("차단하시겠습니끼?");
                 }}
               >
                 차단하기
