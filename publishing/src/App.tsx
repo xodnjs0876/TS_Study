@@ -3,8 +3,8 @@ import { styled } from "styled-components";
 import { Route, Routes } from "react-router-dom";
 import Login from "./pages/auth/login";
 import { AuthProvider } from "./components/auth/provider";
-import { CookiesProvider } from "react-cookie";
 import Preowned from "./pages/preowned/preowned";
+import ChatDetail from "./pages/preowned/[id]";
 // import NotisDetail from "./pages/notis/detail/notice-detail";
 // import Notification from "./pages/notis/notification";
 // import NaverRedirect from "./pages/auth/naver";
@@ -13,14 +13,15 @@ import Preowned from "./pages/preowned/preowned";
 
 export default function App() {
   return (
-    <CookiesProvider>
-      <AuthProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" Component={Login} />
-            <Route path="/preowned" Component={Preowned} />
-          </Routes>
-          {/* <Routes>
+    <AuthProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" Component={Login} />
+          <Route path="/preowned" Component={Preowned}>
+            <Route path="/preowned?id" Component={ChatDetail} />
+          </Route>
+        </Routes>
+        {/* <Routes>
             <Route Component={MainLayout}>
               <Route path="/" Component={Notification} />
               <Route path="/post/:id" Component={NotisDetail} />
@@ -29,9 +30,8 @@ export default function App() {
             <Route path="/oauth/kakao" Component={KaKaoRedirect} />
             <Route path="/oauth/naver" Component={NaverRedirect} />
           </Routes> */}
-        </Layout>
-      </AuthProvider>
-    </CookiesProvider>
+      </Layout>
+    </AuthProvider>
   );
 }
 
