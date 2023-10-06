@@ -1,7 +1,7 @@
 import { useMutation } from "@apollo/client";
 import React, { useEffect } from "react";
-import MUTATION_GET_KAKAO_ACCESS_TOKEN from "../../graphql/notice/mutation/get-kakao-access-token";
-import MUTATION_KAKAO_SIGN_UP from "../../graphql/notice/mutation/kakao-sign-up";
+import MUTATION_GET_KAKAO_ACCESS_TOKEN from "../../graphql/auth/mutation/get-kakao-access-token";
+import MUTATION_KAKAO_SIGN_UP from "../../graphql/auth/mutation/kakao-sign-up";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsLoggedInContext } from "../../components/auth/provider";
 
