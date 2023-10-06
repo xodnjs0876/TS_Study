@@ -1,11 +1,13 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { styled } from "styled-components";
-import { useQuery } from "@apollo/client";
-import MYBUSINESSCHATCHANNELS from "../../graphql/notice/query/my-business-chat-channels";
-import formatDateTime from "../../components/notification/format-date-time";
+import { useMutation, useQuery } from "@apollo/client";
+import MYBUSINESSCHATCHANNELS from "../../graphql/preowned/query/my-business-chat-channels";
 import { useNavigate } from "react-router-dom";
 import ChatDetail from "./[id]";
 import { DateTime } from "luxon";
+import READCHATMESSAGE from "../../graphql/preowned/mutation/read-business-chat-message";
+import BUSINESSCHATCHANNELS from "../../graphql/preowned/query/business-chat-channel";
+import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-message";
 
 interface ChatChannel {
   id: string;
@@ -55,12 +57,8 @@ export default function Preowned() {
         },
       },
     },
-    context: {
-      headers: {
-        Authorization: `Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiQUNDRVNTIiwiaWQiOiIxODlmZDc1Yy01MWYyLTRlOWUtOTcyMC0zYjk4ZGQ1Zjk5NjkiLCJwYXJlbnQiOiJmZWQ3OGQ0Zi1jM2MzLTRhYTMtOTdkMy0yNDUzMWU2Zjg2NzgiLCJpYXQiOjE2OTU3Nzg4MDcsImV4cCI6OTQ3MTc3ODgwNywiaXNzIjoia19maXJpIiwic3ViIjoiMTg5ZmQ3NWMtNTFmMi00ZTllLTk3MjAtM2I5OGRkNWY5OTY5IiwianRpIjoiMjc1MGUzMWUtMzc3MC00NDQxLWFjYmItZWRmMTJhZDVkODBiIn0.Q5puQEyGSWqcD0HbDqDMLnw0ggsGZuY96XU9eQa-7Z8gQXaUDd8ctfrzFgJeXr-eRaq6TuWMZiTtXqtUxsvDHw`,
-      },
-    },
   });
+  const [readMessage] = useMutation(READCHATMESSAGE);
   const navigate = useNavigate();
   const [btnActive, setBtnActive] = useState<number>(0);
   const toggleActive = (e: number) => {
@@ -97,6 +95,14 @@ export default function Preowned() {
                   onClick={() => {
                     toggleActive(i);
                     navigate(`/preowned?id=${edge.node.id}`);
+                    readMessage({
+                      variables: { channelId: edge.node.id },
+                      refetchQueries: [
+                        MYBUSINESSCHATCHANNELS,
+                        BUSINESSCHATCHANNELS,
+                        BUSINESSCHATMESSAGE,
+                      ],
+                    });
                   }}
                 >
                   <Content>
