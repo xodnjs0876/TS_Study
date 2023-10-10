@@ -32,13 +32,10 @@ export default function Preowned() {
     if (date === undefined) return "-";
     const inputDateTime = DateTime.fromISO(date);
     const now = DateTime.now();
-    const startOfToday = now.startOf("day");
+    const day = now.startOf("day");
     const yesterday = now.minus({ days: 1 }).startOf("day");
 
-    if (
-      inputDateTime >= startOfToday &&
-      inputDateTime <= now.startOf("day").endOf("day")
-    ) {
+    if (inputDateTime >= day && inputDateTime <= day.endOf("day")) {
       return inputDateTime.setLocale("ko").toFormat("a h:mm");
     } else if (
       inputDateTime >= yesterday.startOf("day") &&
@@ -100,7 +97,6 @@ export default function Preowned() {
                       refetchQueries: [
                         MYBUSINESSCHATCHANNELS,
                         BUSINESSCHATCHANNELS,
-                        BUSINESSCHATMESSAGE,
                       ],
                     });
                   }}
@@ -112,12 +108,10 @@ export default function Preowned() {
                     </ChattingListTitle>
                     <ChatContent>
                       <p>{edge.node.lastMessage.message}</p>
-                      {edge.node.unreadMessageCount !== 0 ? (
+                      {edge.node.unreadMessageCount !== 0 && (
                         <div className="unRead">
                           <span>{edge.node.unreadMessageCount}</span>
                         </div>
-                      ) : (
-                        ""
                       )}
                     </ChatContent>
                   </Content>
