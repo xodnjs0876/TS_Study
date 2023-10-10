@@ -3,9 +3,10 @@ import styled from "styled-components";
 import Attach from "../../assets/img/attach.svg";
 import Download from "../../assets/img/receive.svg";
 import { useQuery } from "@apollo/client";
-import BUSINESSCHATMESSAGE from "../../graphql/notice/query/business-chat-message";
+import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-message";
 import { downloadFile } from "../../function/download-file";
 import { DateTime } from "luxon";
+import RECEIVECHATMESSAGE from "../../graphql/preowned/subscriptions/receive-business-chat-message";
 
 enum MessageType {
   SYSTEM = "SYSTEM",
@@ -26,6 +27,7 @@ interface ChatMessage {
     name: string;
   };
   payload: {
+    id: string;
     size: number;
     filename: string;
     url: string;
@@ -53,6 +55,14 @@ interface ChatEdge {
   node: ChatMessage;
 }
 
+interface Subscription {
+  totalCount: number;
+  edges: ChatEdge[];
+}
+interface Prev {
+  prev: Subscription;
+}
+
 export default function ChattingList({
   messages,
   isEnd,
@@ -62,18 +72,13 @@ export default function ChattingList({
   isEnd: string;
   id: string;
 }) {
-  const { data, loading } = useQuery(BUSINESSCHATMESSAGE, {
+  const { data, subscribeToMore } = useQuery(BUSINESSCHATMESSAGE, {
     variables: {
       channelId: id,
       sort: {
         createdAt: {
           order: "ASCENDING",
         },
-      },
-    },
-    context: {
-      headers: {
-        Authorization: `Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiQUNDRVNTIiwiaWQiOiIxODlmZDc1Yy01MWYyLTRlOWUtOTcyMC0zYjk4ZGQ1Zjk5NjkiLCJwYXJlbnQiOiJmZWQ3OGQ0Zi1jM2MzLTRhYTMtOTdkMy0yNDUzMWU2Zjg2NzgiLCJpYXQiOjE2OTU3Nzg4MDcsImV4cCI6OTQ3MTc3ODgwNywiaXNzIjoia19maXJpIiwic3ViIjoiMTg5ZmQ3NWMtNTFmMi00ZTllLTk3MjAtM2I5OGRkNWY5OTY5IiwianRpIjoiMjc1MGUzMWUtMzc3MC00NDQxLWFjYmItZWRmMTJhZDVkODBiIn0.Q5puQEyGSWqcD0HbDqDMLnw0ggsGZuY96XU9eQa-7Z8gQXaUDd8ctfrzFgJeXr-eRaq6TuWMZiTtXqtUxsvDHw`,
       },
     },
   });
@@ -83,19 +88,44 @@ export default function ChattingList({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   };
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, data]);
+
+  useEffect(() => {
+    subscribeToMore<Subscription>({
+      document: RECEIVECHATMESSAGE,
+      variables: { channelId: id },
+      updateQuery: (prev, { subscriptionData }) => {
+        //prev 이전 데이터 subdata 받아올 데이터
+        if (!subscriptionData.data) return prev;
+        return {
+          ...prev,
+          businessChatMessages: {
+            ...prev.businessChatMessages,
+            totalCount: prev.businessChatMessages?.totalCount + 1,
+            edges: [
+              ...prev.businessChatMessages.edges,
+              {
+                node: subscriptionData.data.edges,
+              },
+            ],
+          },
+        };
+      },
+    });
+  }, [id, subscribeToMore]);
 
   const edges = useMemo(() => {
     return data?.businessChatMessages?.edges;
   }, [data]);
-  if (loading) return <div>로딩</div>;
+
   return (
     <Layout $isEnd={isEnd} ref={scrollRef}>
       {edges &&
         edges.map((edge: ChatEdge, index: number) => {
-          console.log(edge.node.type);
+          const isLastMessage = edges.length - 1 === index;
           const checkTime = () => {
             if (edges[index + 1]?.node.author?.id === edge.node.author?.id) {
               if (
@@ -131,21 +161,22 @@ export default function ChattingList({
           if (
             edge.node.channel.participants.filter(
               (i) => i.user.id === edge.node.author.id
-            )[0].isMine !== true
+            )[0].isMine === true
           ) {
-            if (edge.node.type === "FILE") {
+            if (
+              edge.node.type === "FILE" ||
+              edge.node.type === "IMAGE" ||
+              edge.node.type === "VIDEO"
+            ) {
               return (
                 <MyChattingText>
                   <div className="side">
-                    {edges.length - 1 === index ? (
-                      edge.node.unreadUserCount === 0 ? (
+                    {isLastMessage &&
+                      (edge.node.unreadUserCount === 0 ? (
                         <span>읽음</span>
                       ) : (
                         <span>안 읽음</span>
-                      )
-                    ) : (
-                      ""
-                    )}
+                      ))}
                     {!checkTime() && (
                       <span className="time">
                         {DateTime.fromISO(edge.node.createdAt)
@@ -160,111 +191,17 @@ export default function ChattingList({
                     </div>
                     <div className="fileContent">
                       <span className="fileName">
-                        {edge.node.payload.filename}
+                        {edge.node.payload?.filename}
                       </span>
                       <span className="fileSize">
-                        {edge.node.payload.size}byte
+                        {(edge.node.payload?.size / 1024).toFixed(2)}KB
                       </span>
                     </div>
                     <div className="download">
                       <button
                         onClick={() =>
                           downloadFile(
-                            edge.node.payload.url,
-                            edge.node.payload.filename
-                          )
-                        }
-                      >
-                        <img src={Download} alt="download" />
-                      </button>
-                    </div>
-                  </MyFileSend>
-                </MyChattingText>
-              );
-            } else if (edge.node.type === "IMAGE") {
-              <MyChattingText>
-                <div className="side">
-                  {edges.length - 1 === index ? (
-                    edge.node.unreadUserCount === 0 ? (
-                      <span>읽음</span>
-                    ) : (
-                      <span>안 읽음</span>
-                    )
-                  ) : (
-                    ""
-                  )}
-                  {!checkTime() && (
-                    <span className="time">
-                      {DateTime.fromISO(edge.node.createdAt)
-                        .setLocale("ko")
-                        .toFormat("a h:mm")}
-                    </span>
-                  )}
-                </div>
-                <MyFileSend>
-                  <div className="attach">
-                    <img src={Attach} alt="attach" />
-                  </div>
-                  <div className="fileContent">
-                    <span className="fileName">
-                      {edge.node.payload.filename}
-                    </span>
-                    <span className="fileSize">
-                      {edge.node.payload.size}byte
-                    </span>
-                  </div>
-                  <div className="download">
-                    <button
-                      onClick={() =>
-                        downloadFile(
-                          edge.node.payload.url,
-                          edge.node.payload.filename
-                        )
-                      }
-                    >
-                      <img src={Download} alt="download" />
-                    </button>
-                  </div>
-                </MyFileSend>
-              </MyChattingText>;
-            } else if (edge.node.type === "VIDEO") {
-              return (
-                <MyChattingText>
-                  <div className="side">
-                    {edges.length - 1 === index ? (
-                      edge.node.unreadUserCount === 0 ? (
-                        <span>읽음</span>
-                      ) : (
-                        <span>안 읽음</span>
-                      )
-                    ) : (
-                      ""
-                    )}
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                  <MyFileSend>
-                    <div className="attach">
-                      <img src={Attach} alt="attach" />
-                    </div>
-                    <div className="fileContent">
-                      <span className="fileName">
-                        {edge.node.payload.filename}
-                      </span>
-                      <span className="fileSize">
-                        {edge.node.payload.size}byte
-                      </span>
-                    </div>
-                    <div className="download">
-                      <button
-                        onClick={() =>
-                          downloadFile(
-                            edge.node.payload.url,
+                            edge.node.payload.id,
                             edge.node.payload.filename
                           )
                         }
@@ -279,15 +216,12 @@ export default function ChattingList({
               return (
                 <MyChattingText>
                   <div className="side">
-                    {edges.length - 1 === index ? (
-                      edge.node.unreadUserCount === 0 ? (
+                    {isLastMessage &&
+                      (edge.node.unreadUserCount === 0 ? (
                         <span>읽음</span>
                       ) : (
                         <span>안 읽음</span>
-                      )
-                    ) : (
-                      ""
-                    )}
+                      ))}
                     {!checkTime() && (
                       <span className="time">
                         {DateTime.fromISO(edge.node.createdAt)
@@ -309,15 +243,12 @@ export default function ChattingList({
               return (
                 <MyChattingText>
                   <div className="side">
-                    {edges.length - 1 === index ? (
-                      edge.node.unreadUserCount === 0 ? (
+                    {isLastMessage &&
+                      (edge.node.unreadUserCount === 0 ? (
                         <span>읽음</span>
                       ) : (
                         <span>안 읽음</span>
-                      )
-                    ) : (
-                      ""
-                    )}
+                      ))}
                     {!checkTime() && (
                       <span className="time">
                         {DateTime.fromISO(edge.node.createdAt)
@@ -328,7 +259,7 @@ export default function ChattingList({
                   </div>
                   <div className="chat">
                     <div className="text">
-                      <span>{edge.node.message}</span>
+                      <span>타입:카드</span>
                     </div>
                   </div>
                 </MyChattingText>
@@ -337,15 +268,12 @@ export default function ChattingList({
               return (
                 <MyChattingText>
                   <div className="side">
-                    {edges.length - 1 === index ? (
-                      edge.node.unreadUserCount === 0 ? (
+                    {isLastMessage &&
+                      (edge.node.unreadUserCount === 0 ? (
                         <span>읽음</span>
                       ) : (
                         <span>안 읽음</span>
-                      )
-                    ) : (
-                      ""
-                    )}
+                      ))}
                     {!checkTime() && (
                       <span className="time">
                         {DateTime.fromISO(edge.node.createdAt)
@@ -363,7 +291,11 @@ export default function ChattingList({
               );
             }
           } else {
-            if (edge.node.type === "FILE") {
+            if (
+              edge.node.type === "FILE" ||
+              edge.node.type === "IMAGE" ||
+              edge.node.type === "VIDEO"
+            ) {
               return (
                 <OpponentChattingText>
                   <div className="content">
@@ -377,14 +309,14 @@ export default function ChattingList({
                           {edge.node.payload.filename}
                         </span>
                         <span className="fileSize">
-                          {edge.node.payload.size}byte
+                          {(edge.node.payload?.size / 1024).toFixed(2)}KB
                         </span>
                       </div>
                       <div className="download">
                         <button
                           onClick={() =>
                             downloadFile(
-                              edge.node.payload.url,
+                              edge.node.payload.id,
                               edge.node.payload.filename
                             )
                           }
@@ -405,86 +337,6 @@ export default function ChattingList({
                   </div>
                 </OpponentChattingText>
               );
-            } else if (edge.node.type === "IMAGE") {
-              <OpponentChattingText>
-                <div className="content">
-                  {checkName() && <span>{edge.node.author.name}</span>}
-                  <OpponentFileSend>
-                    <div className="attach">
-                      <img src={Attach} alt="attach" />
-                    </div>
-                    <div className="fileContent">
-                      <span className="fileName">
-                        {edge.node.payload.filename}
-                      </span>
-                      <span className="fileSize">
-                        {edge.node.payload.size}byte
-                      </span>
-                    </div>
-                    <div className="download">
-                      <button
-                        onClick={() =>
-                          downloadFile(
-                            edge.node.payload.url,
-                            edge.node.payload.filename
-                          )
-                        }
-                      >
-                        <img src={Download} alt="download" />
-                      </button>
-                    </div>
-                  </OpponentFileSend>
-                </div>
-                <div className="side">
-                  {!checkTime() && (
-                    <span className="time">
-                      {DateTime.fromISO(edge.node.createdAt)
-                        .setLocale("ko")
-                        .toFormat("a h:mm")}
-                    </span>
-                  )}
-                </div>
-              </OpponentChattingText>;
-            } else if (edge.node.type === "VIDEO") {
-              <OpponentChattingText>
-                <div className="content">
-                  {checkName() && <span>{edge.node.author.name}</span>}
-                  <OpponentFileSend>
-                    <div className="attach">
-                      <img src={Attach} alt="attach" />
-                    </div>
-                    <div className="fileContent">
-                      <span className="fileName">
-                        {edge.node.payload.filename}
-                      </span>
-                      <span className="fileSize">
-                        {edge.node.payload.size}byte
-                      </span>
-                    </div>
-                    <div className="download">
-                      <button
-                        onClick={() =>
-                          downloadFile(
-                            edge.node.payload.url,
-                            edge.node.payload.filename
-                          )
-                        }
-                      >
-                        <img src={Download} alt="download" />
-                      </button>
-                    </div>
-                  </OpponentFileSend>
-                </div>
-                <div className="side">
-                  {!checkTime() && (
-                    <span className="time">
-                      {DateTime.fromISO(edge.node.createdAt)
-                        .setLocale("ko")
-                        .toFormat("a h:mm")}
-                    </span>
-                  )}
-                </div>
-              </OpponentChattingText>;
             } else if (edge.node.type === "LINK") {
               return (
                 <OpponentChattingText>
@@ -516,7 +368,7 @@ export default function ChattingList({
                     {checkName() && <span>{edge.node.author.name}</span>}
                     <div className="chat">
                       <div className="text">
-                        <span>{edge.node.message}</span>
+                        <span>타입:카드</span>
                       </div>
                     </div>
                   </div>
