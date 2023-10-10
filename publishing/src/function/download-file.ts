@@ -1,9 +1,7 @@
-export async function downloadFile(
-  url: string,
-  filename: string,
-  options?: RequestInit | null
-) {
-  fetch(url, options ? options : { method: "GET" })
+export async function downloadFile(id: string, filename: string) {
+  fetch(`${process.env.REACT_APP_API_KEY}files/download/${id}`, {
+    method: "GET",
+  })
     .then((res) => {
       if (res.status !== 200) throw "파일을 다운로드 할 수 없습니다.";
       return res.blob();
