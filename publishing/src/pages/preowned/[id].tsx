@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import UserImg from "../../assets/img/user.svg";
 import Attach from "../../assets/img/Line.svg";
 import ChattingList from "../../components/pre-owned.tsx/chatting-list";
@@ -47,6 +47,36 @@ export default function ChatDetail() {
   const id = searchParmas.get("id")!;
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [messages, setMessages] = useState<string>("");
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const onClickUpload = useCallback(() => {
+    fileInput.current?.click();
+  }, []);
+
+  const uploadFile = async (file: File[]) => {
+    const formData = new FormData();
+
+    for (const files of file) {
+      formData.append("files", files);
+    }
+
+    const response = await fetch(
+      `${process.env.REACT_APP_API_KEY}files/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (response.ok !== true) {
+      alert("실패");
+      throw "파일 업로드 실패";
+    }
+
+    const data = response.json();
+    return data;
+  };
+
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -131,9 +161,42 @@ export default function ChatDetail() {
           <MessageForm>
             <MessageContent>
               <MessageInput>
-                <button>
+                <button onClick={onClickUpload}>
                   <img src={Attach} alt="attach" />
                 </button>
+                <input
+                  type="file"
+                  multiple
+                  hidden
+                  ref={fileInput}
+                  onChange={async (e) => {
+                    e.preventDefault();
+                    e.persist();
+                    const files: File[] = [];
+                    const fileData = e.target.files;
+                    if (fileData === null) return;
+                    for (const file of fileData) {
+                      files.push(file);
+                    }
+                    const res = await uploadFile(files);
+                    if (res === undefined) return;
+                    const file = await JSON.stringify(res[0]);
+                    await sendMessage({
+                      variables: {
+                        data: {
+                          channelId: id,
+                          type: "FILE",
+                          payload: file,
+                        },
+                      },
+                      refetchQueries: [
+                        BUSINESSCHATCHANNELS,
+                        MYBUSINESSCHATCHANNELS,
+                        BUSINESSCHATMESSAGE,
+                      ],
+                    });
+                  }}
+                />
                 <textarea
                   placeholder="메세지를 입력해주세요"
                   value={messages}
@@ -152,7 +215,6 @@ export default function ChatDetail() {
                     },
                     refetchQueries: [
                       BUSINESSCHATCHANNELS,
-                      BUSINESSCHATMESSAGE,
                       MYBUSINESSCHATCHANNELS,
                     ],
                   })
