@@ -17,6 +17,7 @@ const BUSINESSCHATMESSAGE = gql`
           }
           payload {
             ... on ChatMessageFileTypePayload {
+              id
               filename
               id
               size
