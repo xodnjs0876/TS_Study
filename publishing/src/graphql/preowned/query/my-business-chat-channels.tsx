@@ -7,17 +7,27 @@ const MYBUSINESSCHATCHANNELS = gql`
       edges {
         node {
           id
-          updatedAt
+          state
           unreadMessageCount
-          lastMessage {
-            id
-            message
-          }
           secondhand {
+            content
+            images {
+              url
+            }
+            state
+            title
+            price
             author {
+              id
+              name
+            }
+            category {
               name
               id
             }
+          }
+          lastMessage {
+            message
           }
         }
       }

@@ -1,8 +1,18 @@
 import { gql } from "@apollo/client";
 
 const BUSINESSCHATMESSAGE = gql`
-  query ($channelId: ID!, $sort: [BusinessChatMessageSortInput!]) {
-    businessChatMessages(channelId: $channelId, sort: $sort) {
+  query (
+    $channelId: ID!
+    $after: String
+    $first: Int
+    $sort: [BusinessChatMessageSortInput!]
+  ) {
+    businessChatMessages(
+      channelId: $channelId
+      sort: $sort
+      after: $after
+      first: $first
+    ) {
       totalCount
       edges {
         node {
@@ -43,6 +53,9 @@ const BUSINESSCHATMESSAGE = gql`
             }
           }
         }
+      }
+      pageInfo {
+        startCursor
       }
     }
   }

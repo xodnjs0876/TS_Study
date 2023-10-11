@@ -6,6 +6,9 @@ const BUSINESSCHATCHANNELS = gql`
       id
       secondhand {
         title
+        images {
+          url
+        }
         author {
           id
           name
