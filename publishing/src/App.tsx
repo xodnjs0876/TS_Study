@@ -17,8 +17,8 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" Component={Login} />
-          <Route path="/preowned" Component={Preowned}>
-            <Route path="/preowned?id" Component={ChatDetail} />
+          <Route path="/preowned/" Component={Preowned}>
+            <Route path="/preowned/:id" Component={ChatDetail} />
           </Route>
         </Routes>
         {/* <Routes>
