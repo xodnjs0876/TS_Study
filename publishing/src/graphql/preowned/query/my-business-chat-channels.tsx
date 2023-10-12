@@ -3,7 +3,6 @@ import { gql } from "@apollo/client";
 const MYBUSINESSCHATCHANNELS = gql`
   query ($sort: [ChatChannelOrderByInput!]) {
     myBusinessChatChannels(sort: $sort) {
-      totalCount
       edges {
         node {
           id
@@ -29,8 +28,10 @@ const MYBUSINESSCHATCHANNELS = gql`
           lastMessage {
             message
           }
+          updatedAt
         }
       }
+      totalCount
     }
   }
 `;
