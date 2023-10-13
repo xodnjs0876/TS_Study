@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import Attach from "../../assets/img/attach.svg";
 import Download from "../../assets/img/receive.svg";
@@ -7,6 +7,8 @@ import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-mess
 import { downloadFile } from "../../function/download-file";
 import { DateTime } from "luxon";
 import RECEIVECHATMESSAGE from "../../graphql/preowned/subscriptions/receive-business-chat-message";
+import { formatDate } from "../../function/format-date";
+import Spinner from "../../assets/img/spinner_white.gif";
 
 enum MessageType {
   SYSTEM = "SYSTEM",
@@ -18,6 +20,7 @@ enum MessageType {
   CARD = "CARD",
 }
 interface ChatMessage {
+  id: string;
   unreadUserCount: number;
   message: string;
   createdAt: string;
@@ -56,11 +59,9 @@ interface ChatEdge {
 }
 
 interface Subscription {
+  receiveBusinessChatMessage: ChatEdge[];
   totalCount: number;
   edges: ChatEdge[];
-}
-interface Prev {
-  prev: Subscription;
 }
 
 export default function ChattingList({
@@ -70,35 +71,95 @@ export default function ChattingList({
 }: {
   messages: string;
   isEnd: string;
-  id: string;
+  id: string | undefined;
 }) {
-  const { data, subscribeToMore } = useQuery(BUSINESSCHATMESSAGE, {
-    variables: {
-      channelId: id,
-      sort: {
-        createdAt: {
-          order: "ASCENDING",
-        },
-      },
-    },
-  });
+  const target = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const { data, loading, fetchMore, subscribeToMore } = useQuery(
+    BUSINESSCHATMESSAGE,
+    {
+      variables: {
+        channelId: id,
+        first: 20,
+      },
+    }
+  );
+
   const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   };
 
+  const edges = useMemo(() => {
+    return data && data?.businessChatMessages?.edges;
+  }, [data]);
+
+  const fetchMoreData = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (edges === undefined) return;
+      if (data.businessChatMessages.pageInfo.hasNextPage) {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          fetchMore({
+            variables: {
+              after: data?.businessChatMessages?.pageInfo.endCursor,
+            },
+            updateQuery: (prev, { fetchMoreResult }) => {
+              if (!fetchMoreResult) return prev;
+
+              const hasId = new Set(
+                prev?.businessChatMessages?.edges.map(
+                  (edge: ChatEdge) => edge?.node.id
+                )
+              );
+
+              const newData =
+                fetchMoreResult?.businessChatMessages?.edges.filter(
+                  (edge: ChatEdge) => {
+                    return !hasId.has(edge?.node.id);
+                  }
+                );
+
+              console.log(newData);
+
+              return {
+                ...prev,
+                businessChatMessages: {
+                  ...prev.businessChatMessages,
+                  edges: [...prev.businessChatMessages.edges, ...newData],
+                  pageInfo: fetchMoreResult.businessChatMessages.pageInfo,
+                },
+              };
+            },
+          });
+        });
+      }
+    },
+    [data?.businessChatMessages?.pageInfo.endCursor, edges, fetchMore]
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(fetchMoreData);
+    if (target.current) {
+      observer.observe(target.current);
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchMoreData]);
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages, data]);
+  }, [messages]);
 
   useEffect(() => {
     subscribeToMore<Subscription>({
       document: RECEIVECHATMESSAGE,
       variables: { channelId: id },
       updateQuery: (prev, { subscriptionData }) => {
-        //prev 이전 데이터 subdata 받아올 데이터
         if (!subscriptionData.data) return prev;
         return {
           ...prev,
@@ -108,7 +169,7 @@ export default function ChattingList({
             edges: [
               ...prev.businessChatMessages.edges,
               {
-                node: subscriptionData.data.edges,
+                node: subscriptionData.data.receiveBusinessChatMessage,
               },
             ],
           },
@@ -117,316 +178,314 @@ export default function ChattingList({
     });
   }, [id, subscribeToMore]);
 
-  const edges = useMemo(() => {
-    return data?.businessChatMessages?.edges;
-  }, [data]);
+  if (loading) {
+    return (
+      <Loading>
+        <img src={Spinner} alt="spin" />
+      </Loading>
+    );
+  }
+  if (data === undefined) {
+    return <div>데이터 없음</div>;
+  }
 
   return (
-    <Layout $isEnd={isEnd} ref={scrollRef}>
-      {edges &&
-        edges.map((edge: ChatEdge, index: number) => {
-          const isLastMessage = edges.length - 1 === index;
-          const checkTime = () => {
-            if (edges[index + 1]?.node.author?.id === edge.node.author?.id) {
-              if (
-                edges[index + 1]?.node.createdAt &&
-                DateTime.fromISO(edges[index + 1]?.node.createdAt as string)
-                  .minute === DateTime.fromISO(edge.node.createdAt).minute
-              ) {
-                return true;
+    <Layout>
+      <Chat $isEnd={isEnd} ref={scrollRef}>
+        {isEnd === "INACTIVE" && (
+          <div>
+            <ChatEnd>
+              <Line />
+              <ChatEndTitle>
+                <p>상대방이 대화를 종료하였습니다.</p>
+              </ChatEndTitle>
+              <Line />
+            </ChatEnd>
+          </div>
+        )}
+        {edges &&
+          edges.map((edge: ChatEdge, index: number) => {
+            const item = edge.node;
+            const isLastMessage = index === 0;
+            const isMine = item.channel.participants.filter(
+              (i) => i.user.id === item.author.id
+            )[0].isMine;
+            const checkTime = () => {
+              if (edges[index - 1]?.node.author?.id === item.author?.id) {
+                if (
+                  edges[index - 1]?.node.createdAt &&
+                  DateTime.fromISO(edges[index - 1]?.node.createdAt as string)
+                    .minute === DateTime.fromISO(item.createdAt).minute
+                ) {
+                  return true;
+                } else {
+                  return false;
+                }
               } else {
                 return false;
               }
-            } else {
-              return false;
-            }
-          };
-          const checkName = () => {
-            if (
-              edges[index + 1]?.node.createdAt &&
-              DateTime.fromISO(edges[index + 1]?.node.createdAt as string)
-                .minute === DateTime.fromISO(edge.node.createdAt).minute
-            ) {
-              if (edges[index - 1]?.node.author?.id !== edge.node.author?.id) {
-                return true;
-              }
-              if (edges[index - 1]?.node.author?.id === edge.node.author?.id) {
+            };
+            const checkName = () => {
+              if (
+                edges[index - 1]?.node.createdAt &&
+                DateTime.fromISO(edges[index + 1]?.node.createdAt as string)
+                  .minute === DateTime.fromISO(item.createdAt).minute
+              ) {
+                if (edges[index + 1]?.node.author?.id !== item.author?.id) {
+                  return true;
+                }
+                if (edges[index + 1]?.node.author?.id === item.author?.id) {
+                  return false;
+                }
+              } else {
                 return false;
               }
-            } else {
               return false;
-            }
-            return false;
-          };
-          if (
-            edge.node.channel.participants.filter(
-              (i) => i.user.id === edge.node.author.id
-            )[0].isMine === true
-          ) {
-            if (
-              edge.node.type === "FILE" ||
-              edge.node.type === "IMAGE" ||
-              edge.node.type === "VIDEO"
-            ) {
-              return (
-                <MyChattingText>
-                  <div className="side">
-                    {isLastMessage &&
-                      (edge.node.unreadUserCount === 0 ? (
-                        <span>읽음</span>
-                      ) : (
-                        <span>안 읽음</span>
-                      ))}
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                  <MyFileSend>
-                    <div className="attach">
-                      <img src={Attach} alt="attach" />
+            };
+            if (isMine === true) {
+              if (
+                item.type === "FILE" ||
+                item.type === "IMAGE" ||
+                item.type === "VIDEO"
+              ) {
+                return (
+                  <MyChattingText key={index}>
+                    <div className="side">
+                      {isLastMessage &&
+                        (item.unreadUserCount === 0 ? (
+                          <span>읽음</span>
+                        ) : (
+                          <span>안 읽음</span>
+                        ))}
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
                     </div>
-                    <div className="fileContent">
-                      <span className="fileName">
-                        {edge.node.payload?.filename}
-                      </span>
-                      <span className="fileSize">
-                        {(edge.node.payload?.size / 1024).toFixed(2)}KB
-                      </span>
-                    </div>
-                    <div className="download">
-                      <button
-                        onClick={() =>
-                          downloadFile(
-                            edge.node.payload.id,
-                            edge.node.payload.filename
-                          )
-                        }
-                      >
-                        <img src={Download} alt="download" />
-                      </button>
-                    </div>
-                  </MyFileSend>
-                </MyChattingText>
-              );
-            } else if (edge.node.type === "LINK") {
-              return (
-                <MyChattingText>
-                  <div className="side">
-                    {isLastMessage &&
-                      (edge.node.unreadUserCount === 0 ? (
-                        <span>읽음</span>
-                      ) : (
-                        <span>안 읽음</span>
-                      ))}
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="chat">
-                    <div className="text">
-                      <a href={edge.node.payload.link}>
-                        {edge.node.payload.link}
-                      </a>
-                    </div>
-                  </div>
-                </MyChattingText>
-              );
-            } else if (edge.node.type === "CARD") {
-              return (
-                <MyChattingText>
-                  <div className="side">
-                    {isLastMessage &&
-                      (edge.node.unreadUserCount === 0 ? (
-                        <span>읽음</span>
-                      ) : (
-                        <span>안 읽음</span>
-                      ))}
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="chat">
-                    <div className="text">
-                      <span>타입:카드</span>
-                    </div>
-                  </div>
-                </MyChattingText>
-              );
-            } else {
-              return (
-                <MyChattingText>
-                  <div className="side">
-                    {isLastMessage &&
-                      (edge.node.unreadUserCount === 0 ? (
-                        <span>읽음</span>
-                      ) : (
-                        <span>안 읽음</span>
-                      ))}
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="chat">
-                    <div className="text">
-                      <span>{edge.node.message}</span>
-                    </div>
-                  </div>
-                </MyChattingText>
-              );
-            }
-          } else {
-            if (
-              edge.node.type === "FILE" ||
-              edge.node.type === "IMAGE" ||
-              edge.node.type === "VIDEO"
-            ) {
-              return (
-                <OpponentChattingText>
-                  <div className="content">
-                    {checkName() && <span>{edge.node.author.name}</span>}
-                    <OpponentFileSend>
+                    <MyFileSend>
                       <div className="attach">
                         <img src={Attach} alt="attach" />
                       </div>
                       <div className="fileContent">
-                        <span className="fileName">
-                          {edge.node.payload.filename}
-                        </span>
+                        <p className="fileName">{item.payload?.filename}</p>
                         <span className="fileSize">
-                          {(edge.node.payload?.size / 1024).toFixed(2)}KB
+                          {(item.payload?.size / 1024).toFixed(2)}KB
                         </span>
                       </div>
                       <div className="download">
                         <button
                           onClick={() =>
                             downloadFile(
-                              edge.node.payload.id,
-                              edge.node.payload.filename
+                              item.payload?.id,
+                              item.payload?.filename
                             )
                           }
                         >
                           <img src={Download} alt="download" />
                         </button>
                       </div>
-                    </OpponentFileSend>
-                  </div>
-                  <div className="side">
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                </OpponentChattingText>
-              );
-            } else if (edge.node.type === "LINK") {
-              return (
-                <OpponentChattingText>
-                  <div className="content">
-                    {checkName() && <span>{edge.node.author.name}</span>}
+                    </MyFileSend>
+                  </MyChattingText>
+                );
+              } else if (item.type === "LINK") {
+                return (
+                  <MyChattingText key={index}>
+                    <div className="side">
+                      {isLastMessage &&
+                        (item.unreadUserCount === 0 ? (
+                          <span>읽음</span>
+                        ) : (
+                          <span>안 읽음</span>
+                        ))}
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
                     <div className="chat">
                       <div className="text">
-                        <a href={edge.node.payload.link}>
-                          {edge.node.payload.link}
-                        </a>
+                        <a href={item.payload.link}>{item.payload.link}</a>
                       </div>
                     </div>
-                  </div>
-                  <div className="side">
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                </OpponentChattingText>
-              );
-            } else if (edge.node.type === "CARD") {
-              return (
-                <OpponentChattingText>
-                  <div className="content">
-                    {checkName() && <span>{edge.node.author.name}</span>}
+                  </MyChattingText>
+                );
+              } else if (item.type === "CARD") {
+                return (
+                  <MyChattingText key={index}>
+                    <div className="side">
+                      {isLastMessage &&
+                        (item.unreadUserCount === 0 ? (
+                          <span>읽음</span>
+                        ) : (
+                          <span>안 읽음</span>
+                        ))}
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
                     <div className="chat">
                       <div className="text">
-                        <span>타입:카드</span>
+                        <p>타입:카드</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="side">
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                </OpponentChattingText>
-              );
+                  </MyChattingText>
+                );
+              } else {
+                return (
+                  <MyChattingText key={index}>
+                    <div className="side">
+                      {isLastMessage &&
+                        (item.unreadUserCount === 0 ? (
+                          <span>읽음</span>
+                        ) : (
+                          <span>안 읽음</span>
+                        ))}
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="chat">
+                      <div className="text">
+                        <p>{item.message}</p>
+                      </div>
+                    </div>
+                  </MyChattingText>
+                );
+              }
             } else {
-              return (
-                <OpponentChattingText>
-                  <div className="content">
-                    {checkName() && <span>{edge.node.author.name}</span>}
-                    <div className="chat">
-                      <div className="text">
-                        <span>{edge.node.message}</span>
+              if (
+                item.type === "FILE" ||
+                item.type === "IMAGE" ||
+                item.type === "VIDEO"
+              ) {
+                return (
+                  <OpponentChattingText key={index}>
+                    <div className="content">
+                      {checkName() && <span>{item.author.name}</span>}
+                      <OpponentFileSend>
+                        <div className="attach">
+                          <img src={Attach} alt="attach" />
+                        </div>
+                        <div className="fileContent">
+                          <span className="fileName">
+                            {item.payload.filename}
+                          </span>
+                          <span className="fileSize">
+                            {(item.payload?.size / 1024).toFixed(2)}KB
+                          </span>
+                        </div>
+                        <div className="download">
+                          <button
+                            onClick={() =>
+                              downloadFile(
+                                item.payload.id,
+                                item.payload.filename
+                              )
+                            }
+                          >
+                            <img src={Download} alt="download" />
+                          </button>
+                        </div>
+                      </OpponentFileSend>
+                    </div>
+                    <div className="side">
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
+                  </OpponentChattingText>
+                );
+              } else if (item.type === "LINK") {
+                return (
+                  <OpponentChattingText key={index}>
+                    <div className="content">
+                      {checkName() && <span>{item.author.name}</span>}
+                      <div className="chat">
+                        <div className="text">
+                          <a href={item.payload.link}>{item.payload.link}</a>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="side">
-                    {!checkTime() && (
-                      <span className="time">
-                        {DateTime.fromISO(edge.node.createdAt)
-                          .setLocale("ko")
-                          .toFormat("a h:mm")}
-                      </span>
-                    )}
-                  </div>
-                </OpponentChattingText>
-              );
+                    <div className="side">
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
+                  </OpponentChattingText>
+                );
+              } else if (item.type === "CARD") {
+                return (
+                  <OpponentChattingText key={index}>
+                    <div className="content">
+                      {checkName() && <span>{item.author.name}</span>}
+                      <div className="chat">
+                        <div className="text">
+                          <span>타입:카드</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="side">
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
+                  </OpponentChattingText>
+                );
+              } else {
+                return (
+                  <OpponentChattingText key={index}>
+                    <div className="content">
+                      {checkName() && <span>{item.author.name}</span>}
+                      <div className="chat">
+                        <div className="text">
+                          <span>{item.message}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="side">
+                      {!checkTime() && (
+                        <span className="time">
+                          {formatDate(item.createdAt, true)}
+                        </span>
+                      )}
+                    </div>
+                  </OpponentChattingText>
+                );
+              }
             }
-          }
-        })}
-      {isEnd === "INACTIVE" ? (
-        <div>
-          <ChatEnd>
-            <Line />
-            <ChatEndTitle>
-              <p>상대방이 대화를 종료하였습니다.</p>
-            </ChatEndTitle>
-            <Line />
-          </ChatEnd>
-        </div>
-      ) : (
-        ""
-      )}
+          })}
+      </Chat>
+      <div ref={target}></div>
     </Layout>
   );
 }
-const Layout = styled.div<{ $isEnd: string }>`
+const Layout = styled.div`
+  height: 63%;
+  overflow: hidden;
+  @media screen and (max-width: 600px) {
+    height: 36%;
+  }
+`;
+const Chat = styled.div<{ $isEnd: string }>`
+  display: flex;
+  flex-direction: column-reverse;
   overflow: auto;
-  height: ${(props) => (props.$isEnd === "ACTIVE" ? "51vh" : "60vh")};
+  height: ${(props) => (props.$isEnd === "ACTIVE" ? "500px" : "600px")};
+  @media screen and (max-width: 600px) {
+    height: ${(props) => (props.$isEnd === "ACTIVE" ? "90%" : "55vw")};
+  }
 `;
 const MyChattingText = styled.div`
   width: 760px;
@@ -466,25 +525,46 @@ const MyChattingText = styled.div`
     gap: 10px;
     .text {
       max-width: 320px;
-      display: flex;
       padding: 20px 25px;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
       gap: 15px;
       border-radius: 10px 10px 0px 10px;
       background: #333;
       white-space: pre-line;
       a {
         color: #fff;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
-      span {
+      p {
+        overflow-wrap: break-word;
+        word-break: break-word;
         color: #fff;
         font-family: Pretendard;
         font-size: 14px;
         font-style: normal;
         font-weight: 500;
         line-height: 14px; /* 100% */
+      }
+    }
+  }
+  @media screen and (max-width: 600px) {
+    width: 100vw;
+    .side {
+      span {
+        color: var(--unnamed, #193dd0);
+        font-feature-settings: "clig" off, "liga" off;
+        font-family: Pretendard;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 100%; /* 12px */
+      }
+    }
+    .chat {
+      margin-right: 26px;
+      .text {
+        max-width: 150px;
+        padding: 15px;
       }
     }
   }
@@ -501,6 +581,7 @@ const OpponentChattingText = styled.div`
     flex-direction: column;
     justify-content: flex-start;
     .time {
+      margin-bottom: 2px;
       color: #898989;
       font-feature-settings: "clig" off, "liga" off;
       font-family: Spoqa Han Sans Neo;
@@ -534,7 +615,6 @@ const OpponentChattingText = styled.div`
       flex-direction: column;
       justify-content: center;
       align-items: flex-start;
-      gap: 15px;
       border-radius: 0px 10px 10px 10px;
       background: #edf3fd;
       white-space: pre-line;
@@ -546,6 +626,20 @@ const OpponentChattingText = styled.div`
         font-weight: 500;
         line-height: 14px; /* 100% */
       }
+      a {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+    }
+  }
+  @media screen and (max-width: 600px) {
+    width: 360px;
+    padding-left: 20px;
+    .chat {
+      .text {
+        max-width: 150px;
+        padding: 15px;
+      }
     }
   }
 `;
@@ -554,6 +648,9 @@ const Line = styled.div`
   height: 1px;
   flex-shrink: 0;
   background: #d8dde5;
+  @media screen and (max-width: 600px) {
+    width: 60px;
+  }
 `;
 
 const ChatEndTitle = styled.div`
@@ -625,6 +722,15 @@ const OpponentFileSend = styled.div`
       cursor: pointer;
     }
   }
+  @media screen and (max-width: 600px) {
+    padding: 15px;
+    .fileContent {
+      .fileName {
+        white-space: pre-wrap;
+        max-width: 98px;
+      }
+    }
+  }
 `;
 
 const MyFileSend = styled.div`
@@ -671,5 +777,26 @@ const MyFileSend = styled.div`
       background: none;
       cursor: pointer;
     }
+  }
+  @media screen and (max-width: 600px) {
+    padding: 15px;
+    .fileContent {
+      .fileName {
+        max-width: 98px;
+        white-space: pre-wrap;
+      }
+    }
+  }
+`;
+
+const Loading = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 800px;
+  height: 500px;
+  @media screen and (max-width: 600px) {
+    width: 100vw;
+    height: 100vw;
   }
 `;
