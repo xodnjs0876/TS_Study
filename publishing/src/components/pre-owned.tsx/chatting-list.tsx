@@ -99,50 +99,49 @@ export default function ChattingList({
   const fetchMoreData = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       if (edges === undefined) return;
-      if (data.businessChatMessages.pageInfo.hasNextPage) {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
 
-          fetchMore({
-            variables: {
-              after: data?.businessChatMessages?.pageInfo.endCursor,
-            },
-            updateQuery: (prev, { fetchMoreResult }) => {
-              if (!fetchMoreResult) return prev;
+        if (!data.businessChatMessages.pageInfo.hasNextPage) return;
 
-              const hasId = new Set(
-                prev?.businessChatMessages?.edges.map(
-                  (edge: ChatEdge) => edge?.node.id
-                )
-              );
+        fetchMore({
+          variables: {
+            after: data?.businessChatMessages?.pageInfo.endCursor,
+          },
+          updateQuery: (prev, { fetchMoreResult }) => {
+            if (!fetchMoreResult) return prev;
 
-              const newData =
-                fetchMoreResult?.businessChatMessages?.edges.filter(
-                  (edge: ChatEdge) => {
-                    return !hasId.has(edge?.node.id);
-                  }
-                );
+            const hasId = new Set(
+              prev?.businessChatMessages?.edges.map(
+                (edge: ChatEdge) => edge?.node.id
+              )
+            );
 
-              console.log(newData);
+            const newData = fetchMoreResult?.businessChatMessages?.edges.filter(
+              (edge: ChatEdge) => {
+                return !hasId.has(edge?.node.id);
+              }
+            );
 
-              return {
-                ...prev,
-                businessChatMessages: {
-                  ...prev.businessChatMessages,
-                  edges: [...prev.businessChatMessages.edges, ...newData],
-                  pageInfo: fetchMoreResult.businessChatMessages.pageInfo,
-                },
-              };
-            },
-          });
+            return {
+              ...prev,
+              businessChatMessages: {
+                ...prev.businessChatMessages,
+                edges: [...prev.businessChatMessages.edges, ...newData],
+                pageInfo: fetchMoreResult.businessChatMessages.pageInfo,
+              },
+            };
+          },
         });
-      }
+      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [data?.businessChatMessages?.pageInfo.endCursor, edges, fetchMore]
   );
 
   useEffect(() => {
     const observer = new IntersectionObserver(fetchMoreData);
+
     if (target.current) {
       observer.observe(target.current);
     }
@@ -191,17 +190,15 @@ export default function ChattingList({
 
   return (
     <Layout>
-      <Chat $isEnd={isEnd} ref={scrollRef}>
+      <Chat ref={scrollRef}>
         {isEnd === "INACTIVE" && (
-          <div>
-            <ChatEnd>
-              <Line />
-              <ChatEndTitle>
-                <p>상대방이 대화를 종료하였습니다.</p>
-              </ChatEndTitle>
-              <Line />
-            </ChatEnd>
-          </div>
+          <ChatEnd>
+            <Line />
+            <ChatEndTitle>
+              <p>상대방이 대화를 종료하였습니다.</p>
+            </ChatEndTitle>
+            <Line />
+          </ChatEnd>
         )}
         {edges &&
           edges.map((edge: ChatEdge, index: number) => {
@@ -466,34 +463,35 @@ export default function ChattingList({
               }
             }
           })}
+        <div ref={target}></div>
       </Chat>
-      <div ref={target}></div>
     </Layout>
   );
 }
 const Layout = styled.div`
-  height: 63%;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 65%;
   @media screen and (max-width: 600px) {
-    height: 36%;
+    height: calc(100%-256px);
+  }
+  @media screen and (max-width: 380px) {
+    height: calc(100%-256px);
   }
 `;
-const Chat = styled.div<{ $isEnd: string }>`
+const Chat = styled.div`
   display: flex;
   flex-direction: column-reverse;
-  overflow: auto;
-  height: ${(props) => (props.$isEnd === "ACTIVE" ? "500px" : "600px")};
-  @media screen and (max-width: 600px) {
-    height: ${(props) => (props.$isEnd === "ACTIVE" ? "90%" : "55vw")};
-  }
+  overflow-y: auto;
+  overflow-x: hidden;
 `;
 const MyChattingText = styled.div`
-  width: 760px;
   display: inline-flex;
   justify-content: flex-end;
   align-items: flex-end;
   gap: 8px;
   margin: 4px 0;
+  margin-right: 30px;
   .side {
     display: flex;
     flex-direction: column;
@@ -634,7 +632,7 @@ const OpponentChattingText = styled.div`
   }
   @media screen and (max-width: 600px) {
     width: 360px;
-    padding-left: 20px;
+    padding-left: 26px;
     .chat {
       .text {
         max-width: 150px;
@@ -671,6 +669,7 @@ const ChatEndTitle = styled.div`
 const ChatEnd = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 25px;
   margin: 0 20px;
   margin-top: 70px;
@@ -744,9 +743,10 @@ const MyFileSend = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 11px 15px;
     background: #193dd0;
     border-radius: 15px;
+    width: 45px;
+    height: 45px;
   }
   .fileContent {
     display: flex;
@@ -779,6 +779,7 @@ const MyFileSend = styled.div`
     }
   }
   @media screen and (max-width: 600px) {
+    margin-right: 26px;
     padding: 15px;
     .fileContent {
       .fileName {
