@@ -8,6 +8,7 @@ import READCHATMESSAGE from "../../graphql/preowned/mutation/read-business-chat-
 import BUSINESSCHATCHANNELS from "../../graphql/preowned/query/business-chat-channel";
 import { formatDate } from "../../function/format-date";
 import Spinner from "../../assets/img/spinner.gif";
+import { Pc } from "../../responsive";
 
 interface ChatChannel {
   id: string;
@@ -122,17 +123,19 @@ export default function Preowned() {
               );
             })}
         </ActiveChattingList>
-        <Detail id={channelId}>
-          {channelId ? (
-            <ChatDetail />
-          ) : (
-            <NotChatting>
-              <Text>
-                <span>진행중인 채팅방이 없음</span>
-              </Text>
-            </NotChatting>
-          )}
-        </Detail>
+        <Pc>
+          <Detail>
+            {channelId ? (
+              <ChatDetail />
+            ) : (
+              <NotChatting>
+                <Text>
+                  <span>진행중인 채팅방이 없음</span>
+                </Text>
+              </NotChatting>
+            )}
+          </Detail>
+        </Pc>
       </Chat>
     </Layout>
   );
@@ -145,7 +148,6 @@ const Layout = styled.div`
   @media screen and (max-width: 600px) {
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
   }
 `;
 const TextHeader = styled.div`
@@ -175,34 +177,20 @@ const TextHeader = styled.div`
     line-height: 30px;
   }
   @media screen and (max-width: 600px) {
-    padding: 109px 0 78px 75px;
-    display: flex;
-    align-items: flex-start;
-    h3 {
-      color: #444;
-      font-feature-settings: "clig" off, "liga" off;
-      font-family: Pretendard;
-      font-size: 24px;
-      font-style: normal;
-      font-weight: 700;
-      line-height: 24px;
-      text-align: left;
-    }
-    h1 {
-      display: none;
-    }
+    display: none;
   }
 `;
 
 const Chat = styled.div`
   display: flex;
   gap: 20px;
+  justify-content: center;
   .active {
     background: #eef5ff;
   }
 `;
 
-const ActiveChattingList = styled.div<{ id: string }>`
+const ActiveChattingList = styled.div`
   width: 420px;
   border-radius: 10px;
   border: 1px solid #d8dde5;
@@ -220,7 +208,6 @@ const ActiveChattingList = styled.div<{ id: string }>`
   }
 
   @media screen and (max-width: 600px) {
-    display: ${(props) => (props.id ? "none" : "")};
     width: 100vw;
     height: 100vh;
     border-radius: 0px;
@@ -393,10 +380,13 @@ const Text = styled.div`
   }
 `;
 
-const Detail = styled.div<{ id: string }>`
-  @media screen and (max-width: 600px) {
-    display: ${(props) => (props.id ? "" : "none")};
-  }
+const Detail = styled.div`
+  width: 800px;
+  height: 800px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid #d8dde5;
+  background: #fff;
 `;
 
 const Loading = styled.div`
