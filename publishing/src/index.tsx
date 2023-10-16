@@ -15,22 +15,19 @@ import { createClient } from "graphql-ws";
 import "./index.css";
 import { getMainDefinition } from "@apollo/client/utilities";
 
-localStorage.setItem(
-  "accessToken",
-  "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiQUNDRVNTIiwiaWQiOiIxODlmZDc1Yy01MWYyLTRlOWUtOTcyMC0zYjk4ZGQ1Zjk5NjkiLCJwYXJlbnQiOiJmZWQ3OGQ0Zi1jM2MzLTRhYTMtOTdkMy0yNDUzMWU2Zjg2NzgiLCJpYXQiOjE2OTU3Nzg4MDcsImV4cCI6OTQ3MTc3ODgwNywiaXNzIjoia19maXJpIiwic3ViIjoiMTg5ZmQ3NWMtNTFmMi00ZTllLTk3MjAtM2I5OGRkNWY5OTY5IiwianRpIjoiMjc1MGUzMWUtMzc3MC00NDQxLWFjYmItZWRmMTJhZDVkODBiIn0.Q5puQEyGSWqcD0HbDqDMLnw0ggsGZuY96XU9eQa-7Z8gQXaUDd8ctfrzFgJeXr-eRaq6TuWMZiTtXqtUxsvDHw"
-);
+localStorage.setItem("accessToken", `${process.env.REACT_APP_ACCESS_TOKEN}`);
 
 const httpLink = new HttpLink({
-  uri: "http://211.110.139.183:5900/graphql",
+  uri: `${process.env.REACT_APP_GRAPHQL_API_KEY}`,
   headers: {
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   },
 });
 const wsLink = new GraphQLWsLink(
   createClient({
-    url: "ws://211.110.139.183:5900/graphql",
+    url: `${process.env.REACT_APP_GRAPHQL_WEBSOCKET_API_KEY}`,
     connectionParams: {
-      authToken: localStorage.getItem("accessToken"),
+      authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
   })
 );
@@ -47,9 +44,6 @@ const splitLink = split(
 );
 export const client = new ApolloClient({
   link: splitLink,
-  // headers:{
-  //   Authorization:"Bearer accesstoken"
-  // },
   cache: new InMemoryCache({}),
 });
 
