@@ -18,6 +18,7 @@ import SENDCHATMESSAGE from "../../graphql/preowned/mutation/send-business-chat-
 import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-message";
 import MYBUSINESSCHATCHANNELS from "../../graphql/preowned/query/my-business-chat-channels";
 import { uploadFile } from "../../function/upload-file";
+import Spinner from "../../assets/img/spinner.gif";
 
 const secondHandState = {
   ACTIVE: "판매중",
@@ -70,7 +71,13 @@ export default function ChatDetail() {
     return data?.businessChatChannel;
   }, [data]);
 
-  if (loading) return <div>로딩</div>;
+  if (loading) {
+    return (
+      <Loading>
+        <img src={Spinner} alt="spin" />
+      </Loading>
+    );
+  }
 
   return (
     <div>
@@ -222,12 +229,12 @@ const Chatting = styled.div`
   flex-shrink: 0;
   border-radius: 10px;
   border: 1px solid #d8dde5;
+  margin: auto;
+  overflow: hidden;
   background: #fff;
   @media screen and (max-width: 600px) {
-    width: 100vw;
-    height: 100%;
-    margin: auto;
-    overflow: hidden;
+    width: 100%;
+    height: 100vh;
   }
 `;
 
@@ -427,11 +434,10 @@ const MessageForm = styled.div`
   width: 800px;
   height: 104px;
   border-top: 1px solid #d8dde5;
-  margin-top: 20px;
   @media screen and (max-width: 600px) {
     width: 100vw;
-    bottom: 20px;
     position: absolute;
+    bottom: 0;
   }
 `;
 
@@ -474,7 +480,7 @@ const MessageInput = styled.div`
   }
   @media screen and (max-width: 600px) {
     textarea {
-      width: 188px;
+      width: 60vw;
     }
   }
 `;
@@ -506,5 +512,16 @@ const SendButton = styled.button`
     span {
       white-space: nowrap;
     }
+  }
+`;
+const Loading = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 800px;
+  height: 500px;
+  @media screen and (max-width: 600px) {
+    width: 100vw;
+    height: 100vw;
   }
 `;
