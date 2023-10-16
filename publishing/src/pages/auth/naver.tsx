@@ -1,7 +1,7 @@
 import { useMutation } from "@apollo/client";
 import React, { useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import MUTATION_NAVER_SIGN_UP from "../../graphql/notice/mutation/naver-sign-up";
+import MUTATION_NAVER_SIGN_UP from "../../graphql/auth/mutation/naver-sign-up";
 import { useIsLoggedInContext } from "../../components/auth/provider";
 
 export default function NaverRedirect() {

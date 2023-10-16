@@ -3,7 +3,6 @@ import { styled } from "styled-components";
 import GET_POSTREPLIES_DATE from "../../../graphql/notice/query/notice-post-replies";
 import { useQuery } from "@apollo/client";
 import formatDateTime from "../format-date-time";
-import maskingName from "../../masking-name";
 import L from "../../../assets/img/l.svg";
 
 interface PropsType {
@@ -55,7 +54,7 @@ export default function CommentDetail({ id }: PropsType) {
             <CommentInfo>
               <InfoText>
                 <span className="username">
-                  {maskingName(edge.node.author.name)}
+                  {/* {maskingName(edge.node.author.name)} */}
                 </span>
                 <img src={L} alt="l" />
                 <span className="date">

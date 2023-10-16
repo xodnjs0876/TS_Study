@@ -3,7 +3,7 @@ export async function downloadFile(id: string, filename: string) {
     method: "GET",
   })
     .then((res) => {
-      if (res.status !== 200) throw "파일을 다운로드 할 수 없습니다.";
+      if (res.status !== 200) throw Object.assign(new Error(), { code: 100 });
       return res.blob();
     })
     .then((blob) => {

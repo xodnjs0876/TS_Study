@@ -40,8 +40,6 @@ export default function NotisDetail() {
   const navigate = useNavigate();
   let { id } = useParams();
 
-  console.log(location);
-
   const { loading, data } = useQuery(GET_POST_DATA, {
     variables: {
       noticePostId: `${id}`,
@@ -75,42 +73,12 @@ export default function NotisDetail() {
     }
     return;
   };
-  const ClickFileDownload = useCallback((srcUrl: string, name: string) => {
-    fetch(srcUrl, { method: "GET" })
-      .then((res) => res.blob())
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 1000);
-        a.remove();
-      })
-      .catch((err) => {
-        console.error("err", err);
-      });
-  }, []);
-
-  const edge = useMemo(() => {
-    return data?.noticePost;
-  }, [data]);
-
-  useEffect(() => {
-    if (edge) {
-      setIsLike(edge.isLike);
-      setIsScrap(edge.isScrap);
-    }
-  }, [edge]);
 
   const clickLike = () => {
     setIsLike(!edge.isLike);
-    {
-      !isLike ? (edge!.likeCnt += 1) : (edge!.likeCnt -= 1);
-    }
+    // {
+    //   !isLike ? (edge!.likeCnt += 1) : (edge!.likeCnt -= 1);
+    // }
   };
   const clickScrap = () => {
     setIsScrap(!edge.isScrap);
@@ -147,6 +115,38 @@ export default function NotisDetail() {
     setCommentText("");
     alert(commentText);
   };
+
+  const ClickFileDownload = useCallback((srcUrl: string, name: string) => {
+    fetch(srcUrl, { method: "GET" })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+        a.remove();
+      })
+      .catch((err) => {
+        console.error("err", err);
+      });
+  }, []);
+
+  const edge = useMemo(() => {
+    return data?.noticePost;
+  }, [data]);
+
+  useEffect(() => {
+    if (edge) {
+      setIsLike(edge.isLike);
+      setIsScrap(edge.isScrap);
+    }
+  }, [edge]);
+
   if (loading) return <p> 로딩중 </p>;
 
   if (edge == null) return null;

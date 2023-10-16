@@ -46,6 +46,8 @@ export default function Notification() {
   const navigate = useNavigate();
   const location = useLocation().search;
 
+  let page: number = parseInt(searchParams.get("page")!, 10) || 1;
+
   const { loading, data } = useQuery(GET_NOTICE_DATA, {
     variables: {
       first: 10,
@@ -67,22 +69,6 @@ export default function Notification() {
     return data?.noticePosts?.edges;
   }, [data]);
 
-  let page: number = parseInt(searchParams.get("page")!, 10) || 1;
-
-  useEffect(() => {
-    if (search == null) {
-      setInputValue("");
-    } else {
-      setInputValue(search);
-    }
-
-    if (page == null) {
-      setNowPage(1);
-    } else {
-      setNowPage(page);
-    }
-  }, [search, page]);
-
   const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
@@ -98,6 +84,20 @@ export default function Notification() {
     setNowPage(1);
     searchInput(inputValue);
   };
+
+  useEffect(() => {
+    if (search == null) {
+      setInputValue("");
+    } else {
+      setInputValue(search);
+    }
+
+    if (page == null) {
+      setNowPage(1);
+    } else {
+      setNowPage(page);
+    }
+  }, [search, page]);
 
   if (loading) return <Loading> loading....</Loading>;
 
