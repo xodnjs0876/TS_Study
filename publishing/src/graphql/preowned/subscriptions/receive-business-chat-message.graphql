@@ -1,0 +1,9 @@
+subscription ReceiveBusinessChatMessage($channelId: ID!) {
+  receiveBusinessChatMessage(channelId: $channelId) {
+    id
+    message
+    author {
+      name
+    }
+  }
+}

@@ -1,0 +1,28 @@
+query NoticePost($noticePostId: ID!) {
+  noticePost(id: $noticePostId) {
+    viewCnt
+    title
+    replyCount
+    likeCnt
+    isLike
+    isFavorite
+    id
+    content
+    isPinned
+    files {
+      id
+      url
+      filename
+    }
+    createdAt
+    category {
+      name
+      id
+    }
+    author {
+      name
+      nickname
+      id
+    }
+  }
+}

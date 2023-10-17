@@ -1,0 +1,8 @@
+mutation GetKakaoAccessToken($code: String!, $redirectUri: String!) {
+  getKakaoAccessToken(code: $code, redirectUri: $redirectUri) {
+    isJoin
+    jwtData {
+      access_token
+    }
+  }
+}

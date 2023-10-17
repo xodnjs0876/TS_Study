@@ -1,0 +1,5 @@
+mutation SignInKakao($accessToken: String!) {
+  signInKakao(accessToken: $accessToken) {
+    accessToken
+  }
+}

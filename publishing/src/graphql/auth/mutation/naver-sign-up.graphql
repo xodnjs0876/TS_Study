@@ -1,0 +1,10 @@
+mutation SignUpNaver($accessToken: String!) {
+  signUpNaver(accessToken: $accessToken) {
+    token {
+      accessToken
+    }
+    user {
+      id
+    }
+  }
+}

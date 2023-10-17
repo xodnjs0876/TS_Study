@@ -1,0 +1,10 @@
+mutation SignUpGoogle($accessToken: String!) {
+  signUpGoogle(accessToken: $accessToken) {
+    token {
+      accessToken
+    }
+    user {
+      id
+    }
+  }
+}

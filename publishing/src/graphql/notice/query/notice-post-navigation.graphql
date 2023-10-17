@@ -1,0 +1,12 @@
+query NoticePostNavigation(
+  $noticePostNavigationId: ID!
+  $params: NoticePostNavigationParamsInput
+) {
+  noticePostNavigation(id: $noticePostNavigationId, params: $params) {
+    prePostId
+    nextPostId
+    params {
+      search
+    }
+  }
+}

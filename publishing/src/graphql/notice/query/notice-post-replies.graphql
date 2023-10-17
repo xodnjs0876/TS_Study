@@ -1,0 +1,15 @@
+query NoticePostReplies($filter: [NoticeReplyFilterInput!]) {
+  noticePostReplies(filter: $filter) {
+    edges {
+      node {
+        id
+        author {
+          name
+        }
+        content
+        createdAt
+        isMine
+      }
+    }
+  }
+}

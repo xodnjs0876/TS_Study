@@ -1,0 +1,33 @@
+query NoticePosts(
+  $filter: [NoticePostFilterInput!]
+  $first: Int
+  $offset: Int
+) {
+  noticePosts(filter: $filter, first: $first, offset: $offset) {
+    totalCount
+    edges {
+      node {
+        id
+        likeCnt
+        author {
+          email
+          name
+          nickname
+        }
+        createdAt
+        category {
+          name
+          id
+        }
+        title
+        viewCnt
+        replyCount
+        files {
+          url
+          id
+          filename
+        }
+      }
+    }
+  }
+}
