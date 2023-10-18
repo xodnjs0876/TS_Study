@@ -1,9 +1,47 @@
 subscription ReceiveBusinessChatMessage($channelId: ID!) {
   receiveBusinessChatMessage(channelId: $channelId) {
     id
+    createdAt
+    deletedAt
     message
+    type
+    payload {
+      ... on ChatMessageFileTypePayload {
+        id
+        url
+        size
+        filename
+      }
+      ... on ChatMessageCardTypePayload {
+        image {
+          url
+          size
+          filename
+        }
+      }
+      ... on ChatMessageLinkTypePayload {
+        link
+      }
+    }
     author {
+      id
       name
+    }
+    unreadUserCount
+    channel {
+      secondhand {
+        author {
+          id
+          name
+        }
+      }
+      participants {
+        isMine
+        user {
+          id
+          name
+        }
+      }
     }
   }
 }

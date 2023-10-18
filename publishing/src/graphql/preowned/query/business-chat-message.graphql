@@ -20,7 +20,6 @@ query BusinessChatMessages($channelId: ID!, $after: String, $first: Int) {
           ... on ChatMessageFileTypePayload {
             id
             filename
-            id
             size
             url
           }
