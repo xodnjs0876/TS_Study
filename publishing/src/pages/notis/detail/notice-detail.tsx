@@ -17,12 +17,13 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { useQuery } from "@apollo/client";
-import GET_POST_DATA from "../../../graphql/notice/query/notice-post";
 import CommentDetail from "../../../components/notification/detail/comment";
 import formatNum from "../../../components/format-num";
-import GET_POST_NAVIGATION from "../../../graphql/notice/query/notice-post-navigation";
 import CategoryText from "../../../components/notification/category-text";
+import {
+  useNoticePostNavigationQuery,
+  useNoticePostQuery,
+} from "../../../graphql/graphql";
 
 interface FileType {
   id: string;
@@ -40,17 +41,17 @@ export default function NotisDetail() {
   const navigate = useNavigate();
   let { id } = useParams();
 
-  const { loading, data } = useQuery(GET_POST_DATA, {
+  const { loading, data } = useNoticePostQuery({
     variables: {
       noticePostId: `${id}`,
     },
   });
 
-  const { data: navigation } = useQuery(GET_POST_NAVIGATION, {
+  const { data: navigation } = useNoticePostNavigationQuery({
     variables: {
       noticePostNavigationId: `${id}`,
-      params: search && {
-        search: `${search}`,
+      params: {
+        search: search || undefined,
       },
     },
   });
@@ -75,13 +76,13 @@ export default function NotisDetail() {
   };
 
   const clickLike = () => {
-    setIsLike(!edge.isLike);
+    setIsLike(!edge?.isLike);
     // {
     //   !isLike ? (edge!.likeCnt += 1) : (edge!.likeCnt -= 1);
     // }
   };
   const clickScrap = () => {
-    setIsScrap(!edge.isScrap);
+    setIsScrap(!edge?.isPinned);
   };
   const sharePage = () => {
     const shareObject = {
@@ -142,17 +143,17 @@ export default function NotisDetail() {
 
   useEffect(() => {
     if (edge) {
-      setIsLike(edge.isLike);
-      setIsScrap(edge.isScrap);
+      setIsLike(edge?.isLike);
+      setIsScrap(edge?.isPinned!);
     }
   }, [edge]);
 
   if (loading) return <p> 로딩중 </p>;
 
-  if (edge == null) return null;
+  if (edge === null) return <>데이터없음</>;
 
   const attach = () => {
-    if (edge.files.length < 1) {
+    if (edge?.files?.length! < 1) {
       return (
         <AttachBox>
           <Text>첨부파일</Text>
@@ -165,7 +166,7 @@ export default function NotisDetail() {
       <AttachBox>
         <Text>첨부파일</Text>
         <div>
-          {edge.files.map((file: FileType) => (
+          {edge?.files?.map((file: FileType) => (
             <DownloadText className="key" key={file.id}>
               <img src={Attach} alt="attach" />
               <p onClick={() => ClickFileDownload(file.url, file.filename)}>
@@ -189,16 +190,16 @@ export default function NotisDetail() {
       <CategoryText />
       <Content>
         <Title
-          title={edge.title}
-          viewCnt={edge.viewCnt}
-          likeCnt={edge.likeCnt}
-          createdAt={edge.createAt}
-          category={edge.category}
-          author={edge.author}
+          title={edge?.title!}
+          viewCnt={edge?.viewCnt!}
+          likeCnt={edge?.likeCnt!}
+          createdAt={edge?.createdAt}
+          category={edge?.category!}
+          name={edge?.author?.name}
         />
         <p
           className="content"
-          dangerouslySetInnerHTML={{ __html: `${edge.content}` }}
+          dangerouslySetInnerHTML={{ __html: `${edge?.content}` }}
         />
         {attach()}
         <ButtonBox>
@@ -227,7 +228,7 @@ export default function NotisDetail() {
       <CommentBox>
         <CommentText>
           <span className="commentText">댓글</span>
-          <span className="commentCnt">{edge.replyCount}</span>
+          <span className="commentCnt">{edge?.replyCount}</span>
         </CommentText>
         <CommentDetail id={id} />
         <CommentTextArea>

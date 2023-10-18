@@ -11,26 +11,24 @@ import Back from "../../assets/img/backArrow.svg";
 import ChattingList from "../../components/pre-owned.tsx/chatting-list";
 import Modal from "../../components/pre-owned.tsx/modal";
 import { styled } from "styled-components";
-import { useMutation, useQuery } from "@apollo/client";
-import BUSINESSCHATCHANNELS from "../../graphql/preowned/query/business-chat-channel";
+import { useMutation } from "@apollo/client";
 import { useNavigate, useParams } from "react-router-dom";
-import SENDCHATMESSAGE from "../../graphql/preowned/mutation/send-business-chat-message";
-import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-message";
-import MYBUSINESSCHATCHANNELS from "../../graphql/preowned/query/my-business-chat-channels";
 import { uploadFile } from "../../function/upload-file";
 import Spinner from "../../assets/img/spinner.gif";
+import {
+  BusinessChatChannelDocument,
+  BusinessChatMessagesDocument,
+  MyBusinessChatChannelsDocument,
+  SecondhandStateEnum,
+  SendBusinessChatMessageDocument,
+  useBusinessChatChannelQuery,
+} from "../../graphql/graphql";
 
 const secondHandState = {
   ACTIVE: "판매중",
   RESERVATION: "거래 예약",
   END: "거래 완료",
 };
-
-enum SecondhandStateEnum {
-  ACTIVE = "ACTIVE",
-  RESERVATION = "RESERVATION",
-  END = "END",
-}
 
 export default function ChatDetail() {
   const navigate = useNavigate();
@@ -42,12 +40,12 @@ export default function ChatDetail() {
 
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const { data, loading } = useQuery(BUSINESSCHATCHANNELS, {
+  const { data, loading } = useBusinessChatChannelQuery({
     variables: {
-      businessChatChannelId: id,
+      businessChatChannelId: id!,
     },
   });
-  const [sendMessage] = useMutation(SENDCHATMESSAGE);
+  const [sendMessage] = useMutation(SendBusinessChatMessageDocument);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -93,7 +91,7 @@ export default function ChatDetail() {
                 <img src={Back} alt="back" />
               </button>
               <img className="user" src={UserImg} alt="user" />
-              <span>{edge?.secondhand.author.name}</span>
+              <span>{edge?.secondhand?.author.name}</span>
             </User>
             <Buttons>
               <button
@@ -119,22 +117,25 @@ export default function ChatDetail() {
         <Object>
           <ObjectContent>
             <div>
-              <img src={edge?.secondhand.images[0].url} alt="secondhandImg" />
+              <img
+                src={edge?.secondhand?.images?.[0].url}
+                alt="secondhand?Img"
+              />
             </div>
             <ObjectText>
               <ObjectTitle>
                 <span className="objectStatus">
                   {
                     secondHandState[
-                      edge?.secondhand.state as SecondhandStateEnum
+                      edge?.secondhand?.state as unknown as SecondhandStateEnum
                     ]
                   }
                 </span>
                 <span className="line">ㅣ</span>
                 <span className="category">
-                  {edge?.secondhand.category.name}
+                  {edge?.secondhand?.category.name}
                 </span>
-                <p>{edge?.secondhand.content}</p>
+                <p>{edge?.secondhand?.content}</p>
               </ObjectTitle>
               <ObjectCost>
                 <p>{edge?.secondhand?.price.toLocaleString()}원</p>
@@ -176,9 +177,9 @@ export default function ChatDetail() {
                         },
                       },
                       refetchQueries: [
-                        BUSINESSCHATCHANNELS,
-                        MYBUSINESSCHATCHANNELS,
-                        BUSINESSCHATMESSAGE,
+                        BusinessChatChannelDocument,
+                        MyBusinessChatChannelsDocument,
+                        BusinessChatMessagesDocument,
                       ],
                     });
                   }}
@@ -201,8 +202,8 @@ export default function ChatDetail() {
                       },
                     },
                     refetchQueries: [
-                      BUSINESSCHATCHANNELS,
-                      MYBUSINESSCHATCHANNELS,
+                      BusinessChatChannelDocument,
+                      MyBusinessChatChannelsDocument,
                     ],
                   });
                   setMessages("");

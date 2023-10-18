@@ -1,42 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Glass from "../../assets/img/magnifying-glass.svg";
 import NotisList from "../../components/notification/list/notice-list";
 import PageMove from "../../components/notification/pagination";
 import CategoryText from "../../components/notification/category-text";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@apollo/client";
-import GET_NOTICE_DATA from "../../graphql/notice/query/notice-posts";
-
-export interface Notice {
-  id: string;
-  title: string;
-  category: {
-    name: string;
-    id: string;
-  };
-  author: {
-    email: string;
-    nickname: string;
-    name: string;
-  };
-  createdAt: string; //Milliseconds
-  viewCnt: number;
-  likeCnt: number;
-  replyCount: number;
-  isLike: boolean;
-  files: {
-    id: string;
-    url: string;
-    filename: string;
-  } | null;
-}
-export interface INotices {
-  edges: NoticeEdge; //검색된 공지
-}
-export interface NoticeEdge {
-  node: Notice;
-}
+import {
+  StringFilterOperators,
+  useNoticePostsQuery,
+} from "../../graphql/graphql";
 
 export default function Notification() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -48,7 +20,7 @@ export default function Notification() {
 
   let page: number = parseInt(searchParams.get("page")!, 10) || 1;
 
-  const { loading, data } = useQuery(GET_NOTICE_DATA, {
+  const { loading, data } = useNoticePostsQuery({
     variables: {
       first: 10,
       offset: 10 * (nowPage - 1),
@@ -57,17 +29,13 @@ export default function Notification() {
           ? [
               {
                 value: `%${search}%`,
-                operator: "LIKE",
+                operator: StringFilterOperators.Like,
               },
             ]
           : [],
       },
     },
   });
-
-  const edges = useMemo(() => {
-    return data?.noticePosts?.edges;
-  }, [data]);
 
   const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -100,9 +68,10 @@ export default function Notification() {
   }, [search, page]);
 
   if (loading) return <Loading> loading....</Loading>;
+  if (data === undefined) return <>데이터가 없음</>;
 
   const list = () => {
-    if (edges?.length <= 0 && search) {
+    if (data?.noticePosts.edges?.length <= 0 && search) {
       return (
         <NoSearchWord>'{search}' 에 대한 검색 결과가 없습니다.</NoSearchWord>
       );
@@ -110,23 +79,23 @@ export default function Notification() {
 
     return (
       <div className="list">
-        {edges &&
-          edges.map((edge: NoticeEdge, i: number) => {
-            const number = data.noticePosts.totalCount - i - 10 * (page - 1);
+        {data &&
+          data?.noticePosts?.edges?.map((edge, i: number) => {
+            const number = data?.noticePosts?.totalCount - i - 10 * (page - 1);
             return (
               <NotisList
-                key={edge.node.id}
+                key={edge?.node.id}
                 number={number}
-                title={edge.node.title}
-                name={edge.node.author?.name}
-                category={edge.node.category?.name}
-                createdAt={edge.node.createdAt}
-                hasFile={edge.node.files === undefined ? false : true}
-                viewCount={edge.node.viewCnt}
-                likeCount={edge.node.likeCnt}
-                commentCount={edge.node.replyCount}
+                title={edge?.node.title}
+                name={edge?.node.author?.name}
+                category={edge?.node.category?.name}
+                createdAt={edge?.node.createdAt}
+                hasFile={edge?.node.files === undefined ? false : true}
+                viewCount={edge?.node.viewCnt}
+                likeCount={edge?.node.likeCnt}
+                commentCount={edge?.node.replyCount}
                 search={search}
-                onClick={() => navigate(`/post/${edge.node.id}${location}`)}
+                onClick={() => navigate(`/post/${edge?.node.id}${location}`)}
               />
             );
           })}

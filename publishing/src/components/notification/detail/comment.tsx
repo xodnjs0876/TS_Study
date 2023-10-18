@@ -1,37 +1,25 @@
 import { useMemo } from "react";
 import { styled } from "styled-components";
-import GET_POSTREPLIES_DATE from "../../../graphql/notice/query/notice-post-replies";
-import { useQuery } from "@apollo/client";
 import formatDateTime from "../format-date-time";
 import L from "../../../assets/img/l.svg";
+import {
+  IdFilterOperators,
+  useNoticePostRepliesQuery,
+} from "../../../graphql/graphql";
 
 interface PropsType {
   id: string | undefined;
 }
 
-interface NoticeReply {
-  id: string;
-  createdAt: string;
-  content: string;
-  author: {
-    name: string;
-  };
-  isMine: boolean;
-}
-
-interface ReplyEdge {
-  node: NoticeReply;
-}
-
 export default function CommentDetail({ id }: PropsType) {
-  const { data } = useQuery(GET_POSTREPLIES_DATE, {
+  const { data } = useNoticePostRepliesQuery({
     variables: {
       filter: [
         {
           post__id: [
             {
               value: id,
-              operator: "EQUAL",
+              operator: IdFilterOperators.Equal,
             },
           ],
         },
@@ -48,9 +36,9 @@ export default function CommentDetail({ id }: PropsType) {
   }
   return (
     <>
-      {edges.map((edge: ReplyEdge) => {
+      {edges?.map((edge) => {
         return (
-          <Layout key={edge.node.id}>
+          <Layout key={edge?.node.id}>
             <CommentInfo>
               <InfoText>
                 <span className="username">
@@ -58,10 +46,10 @@ export default function CommentDetail({ id }: PropsType) {
                 </span>
                 <img src={L} alt="l" />
                 <span className="date">
-                  {formatDateTime(edge.node.createdAt)}
+                  {formatDateTime(edge?.node.createdAt)}
                 </span>
               </InfoText>
-              {edge.node.isMine ? (
+              {edge?.node.isMine ? (
                 <Button>
                   <button>수정</button>
                   <img src={L} alt="l" />
@@ -74,7 +62,7 @@ export default function CommentDetail({ id }: PropsType) {
               )}
             </CommentInfo>
             <Content>
-              <p>{edge.node.content}</p>
+              <p>{edge?.node.content}</p>
             </Content>
           </Layout>
         );

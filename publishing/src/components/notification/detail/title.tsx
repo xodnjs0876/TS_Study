@@ -20,11 +20,7 @@ interface PropsType {
     name: string;
     id: string;
   };
-  author: {
-    name: string;
-    nickname: string;
-    id: string;
-  };
+  name: string | null | undefined;
 }
 
 export default function Title({
@@ -33,7 +29,7 @@ export default function Title({
   likeCnt,
   createdAt,
   category,
-  author,
+  name,
 }: PropsType) {
   return (
     <Layout>
@@ -49,7 +45,7 @@ export default function Title({
         {category ? [category.name] : null} {title}
       </Text>
       <InfoText>
-        <FlexText>{author.name}</FlexText>
+        <FlexText>{name}</FlexText>
         <p>|</p>
         <FlexText>{formatDateTime(createdAt)}</FlexText>
         <p>|</p>

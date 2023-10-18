@@ -2,67 +2,19 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import Attach from "../../assets/img/attach.svg";
 import Download from "../../assets/img/receive.svg";
-import { useQuery } from "@apollo/client";
-import BUSINESSCHATMESSAGE from "../../graphql/preowned/query/business-chat-message";
 import { downloadFile } from "../../function/download-file";
 import { DateTime } from "luxon";
-import RECEIVECHATMESSAGE from "../../graphql/preowned/subscriptions/receive-business-chat-message";
 import { formatDate } from "../../function/format-date";
 import Spinner from "../../assets/img/spinner_white.gif";
-
-enum MessageType {
-  SYSTEM = "SYSTEM",
-  TEXT = "TEXT",
-  IMAGE = "IMAGE",
-  FILE = "FILE",
-  VIDEO = "VIDEO",
-  LINK = "LINK",
-  CARD = "CARD",
-}
-interface ChatMessage {
-  id: string;
-  unreadUserCount: number;
-  message: string;
-  createdAt: string;
-  type: MessageType;
-  author: {
-    id: string;
-    name: string;
-  };
-  payload: {
-    id: string;
-    size: number;
-    filename: string;
-    url: string;
-    link: string;
-  };
-  channel: {
-    secondhand: {
-      author: {
-        id: string;
-        name: string;
-      };
-    };
-    participants: [
-      {
-        isMine: boolean;
-        user: {
-          id: string;
-          name: string;
-        };
-      }
-    ];
-  };
-}
-interface ChatEdge {
-  node: ChatMessage;
-}
-
-interface Subscription {
-  receiveBusinessChatMessage: ChatEdge[];
-  totalCount: number;
-  edges: ChatEdge[];
-}
+import {
+  ChatMessageCardTypePayload,
+  ChatMessageFileTypePayload,
+  ChatMessageLinkTypePayload,
+  ChatMessageType,
+  ReceiveBusinessChatMessageDocument,
+  ReceiveBusinessChatMessageSubscription,
+  useBusinessChatMessagesQuery,
+} from "../../graphql/graphql";
 
 export default function ChattingList({
   messages,
@@ -70,21 +22,19 @@ export default function ChattingList({
   id,
 }: {
   messages: string;
-  isEnd: string;
+  isEnd: string | undefined;
   id: string | undefined;
 }) {
   const target = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, loading, fetchMore, subscribeToMore } = useQuery(
-    BUSINESSCHATMESSAGE,
-    {
+  const { data, loading, fetchMore, subscribeToMore } =
+    useBusinessChatMessagesQuery({
       variables: {
-        channelId: id,
+        channelId: id!,
         first: 20,
       },
-    }
-  );
+    });
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -102,7 +52,7 @@ export default function ChattingList({
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
 
-        if (!data.businessChatMessages.pageInfo.hasNextPage) return;
+        if (!data?.businessChatMessages.pageInfo.hasNextPage) return;
 
         fetchMore({
           variables: {
@@ -112,13 +62,11 @@ export default function ChattingList({
             if (!fetchMoreResult) return prev;
 
             const hasId = new Set(
-              prev?.businessChatMessages?.edges.map(
-                (edge: ChatEdge) => edge?.node.id
-              )
+              prev?.businessChatMessages?.edges.map((edge) => edge?.node.id)
             );
 
             const newData = fetchMoreResult?.businessChatMessages?.edges.filter(
-              (edge: ChatEdge) => {
+              (edge) => {
                 return !hasId.has(edge?.node.id);
               }
             );
@@ -155,16 +103,18 @@ export default function ChattingList({
   }, [messages]);
 
   useEffect(() => {
-    subscribeToMore<Subscription>({
-      document: RECEIVECHATMESSAGE,
-      variables: { channelId: id },
+    if (id === undefined) return;
+    subscribeToMore<ReceiveBusinessChatMessageSubscription>({
+      document: ReceiveBusinessChatMessageDocument,
+      variables: {
+        channelId: id,
+      },
       updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data) return prev;
         return {
           ...prev,
           businessChatMessages: {
             ...prev.businessChatMessages,
-            totalCount: prev.businessChatMessages?.totalCount + 1,
+            totalCount: prev.businessChatMessages.totalCount + 1,
             edges: [
               ...prev.businessChatMessages.edges,
               {
@@ -201,18 +151,20 @@ export default function ChattingList({
           </ChatEnd>
         )}
         {edges &&
-          edges.map((edge: ChatEdge, index: number) => {
-            const item = edge.node;
+          edges.map((edge, index: number) => {
+            if (edge === undefined) return "";
+            const item = edge?.node;
             const isLastMessage = index === 0;
-            const isMine = item.channel.participants.filter(
-              (i) => i.user.id === item.author.id
+            const isMine = item?.channel.participants.filter(
+              (i) => i.user.id === item?.author?.id
             )[0].isMine;
+
             const checkTime = () => {
-              if (edges[index - 1]?.node.author?.id === item.author?.id) {
+              if (edges[index - 1]?.node.author?.id === item?.author?.id) {
                 if (
                   edges[index - 1]?.node.createdAt &&
                   DateTime.fromISO(edges[index - 1]?.node.createdAt as string)
-                    .minute === DateTime.fromISO(item.createdAt).minute
+                    .minute === DateTime.fromISO(item?.createdAt).minute
                 ) {
                   return true;
                 } else {
@@ -226,12 +178,12 @@ export default function ChattingList({
               if (
                 edges[index - 1]?.node.createdAt &&
                 DateTime.fromISO(edges[index + 1]?.node.createdAt as string)
-                  .minute === DateTime.fromISO(item.createdAt).minute
+                  .minute === DateTime.fromISO(item?.createdAt).minute
               ) {
-                if (edges[index + 1]?.node.author?.id !== item.author?.id) {
+                if (edges[index + 1]?.node.author?.id !== item?.author?.id) {
                   return true;
                 }
-                if (edges[index + 1]?.node.author?.id === item.author?.id) {
+                if (edges[index + 1]?.node.author?.id === item?.author?.id) {
                   return false;
                 }
               } else {
@@ -239,11 +191,44 @@ export default function ChattingList({
               }
               return false;
             };
+            const getPayloadData = () => {
+              if (
+                item?.type === ChatMessageType.File ||
+                item?.type === ChatMessageType.Image ||
+                item?.type === ChatMessageType.Video
+              ) {
+                const filePayload = item?.payload as ChatMessageFileTypePayload;
+
+                return {
+                  fileId: filePayload?.id,
+                  fileName: filePayload?.filename,
+                  fileSize: filePayload?.size,
+                };
+              } else if (item?.type === ChatMessageType.Card) {
+                const filePayload = item?.payload as ChatMessageCardTypePayload;
+
+                return {
+                  fileName: filePayload?.image?.filename,
+                  fileSize: filePayload?.image?.size,
+                  fileUrl: filePayload?.image?.url,
+                };
+              } else {
+                const filePayload = item?.payload as ChatMessageLinkTypePayload;
+
+                return {
+                  link: filePayload?.link,
+                };
+              }
+            };
+            const { fileId, fileName, fileSize, fileUrl, link } =
+              getPayloadData();
+
+            if (item === undefined) return "";
             if (isMine === true) {
               if (
-                item.type === "FILE" ||
-                item.type === "IMAGE" ||
-                item.type === "VIDEO"
+                item?.type === ChatMessageType.File ||
+                item?.type === ChatMessageType.Image ||
+                item?.type === ChatMessageType.Video
               ) {
                 return (
                   <MyChattingText key={index}>
@@ -265,19 +250,17 @@ export default function ChattingList({
                         <img src={Attach} alt="attach" />
                       </div>
                       <div className="fileContent">
-                        <p className="fileName">{item.payload?.filename}</p>
+                        <p className="fileName">{fileName}</p>
                         <span className="fileSize">
-                          {(item.payload?.size / 1024).toFixed(2)}KB
+                          {fileSize ? (fileSize / 1024).toFixed(2) : 0}KB
                         </span>
                       </div>
                       <div className="download">
                         <button
-                          onClick={() =>
-                            downloadFile(
-                              item.payload?.id,
-                              item.payload?.filename
-                            )
-                          }
+                          onClick={() => {
+                            if (fileId && fileName)
+                              downloadFile(fileId, fileName);
+                          }}
                         >
                           <img src={Download} alt="download" />
                         </button>
@@ -285,7 +268,7 @@ export default function ChattingList({
                     </MyFileSend>
                   </MyChattingText>
                 );
-              } else if (item.type === "LINK") {
+              } else if (item.type === ChatMessageType.Link) {
                 return (
                   <MyChattingText key={index}>
                     <div className="side">
@@ -303,12 +286,12 @@ export default function ChattingList({
                     </div>
                     <div className="chat">
                       <div className="text">
-                        <a href={item.payload.link}>{item.payload.link}</a>
+                        <a href={link}>{link && link}</a>
                       </div>
                     </div>
                   </MyChattingText>
                 );
-              } else if (item.type === "CARD") {
+              } else if (item.type === ChatMessageType.Card) {
                 return (
                   <MyChattingText key={index}>
                     <div className="side">
@@ -324,11 +307,17 @@ export default function ChattingList({
                         </span>
                       )}
                     </div>
-                    <div className="chat">
-                      <div className="text">
-                        <p>타입:카드</p>
+                    <MyFileSend>
+                      <div className="attach">
+                        <img src={fileUrl} alt="card" />
                       </div>
-                    </div>
+                      <div className="fileContent">
+                        <p className="fileName">{fileName}</p>
+                        <span className="fileSize">
+                          {fileSize ? (fileSize / 1024).toFixed(2) : 0}KB
+                        </span>
+                      </div>
+                    </MyFileSend>
                   </MyChattingText>
                 );
               } else {
@@ -349,7 +338,7 @@ export default function ChattingList({
                     </div>
                     <div className="chat">
                       <div className="text">
-                        <p>{item.message}</p>
+                        <p>{item?.message}</p>
                       </div>
                     </div>
                   </MyChattingText>
@@ -364,27 +353,25 @@ export default function ChattingList({
                 return (
                   <OpponentChattingText key={index}>
                     <div className="content">
-                      {checkName() && <span>{item.author.name}</span>}
+                      {checkName() && <span>{item?.author?.name}</span>}
                       <OpponentFileSend>
                         <div className="attach">
                           <img src={Attach} alt="attach" />
                         </div>
                         <div className="fileContent">
                           <span className="fileName">
-                            {item.payload.filename}
+                            {fileName ?? fileName}
                           </span>
                           <span className="fileSize">
-                            {(item.payload?.size / 1024).toFixed(2)}KB
+                            {fileSize ? (fileSize / 1024).toFixed(2) : 0}KB
                           </span>
                         </div>
                         <div className="download">
                           <button
-                            onClick={() =>
-                              downloadFile(
-                                item.payload.id,
-                                item.payload.filename
-                              )
-                            }
+                            onClick={() => {
+                              if (fileId && fileName)
+                                downloadFile(fileId, fileName);
+                            }}
                           >
                             <img src={Download} alt="download" />
                           </button>
@@ -400,14 +387,14 @@ export default function ChattingList({
                     </div>
                   </OpponentChattingText>
                 );
-              } else if (item.type === "LINK") {
+              } else if (item.type === ChatMessageType.Link) {
                 return (
                   <OpponentChattingText key={index}>
                     <div className="content">
-                      {checkName() && <span>{item.author.name}</span>}
+                      {checkName() && <span>{item?.author?.name}</span>}
                       <div className="chat">
                         <div className="text">
-                          <a href={item.payload.link}>{item.payload.link}</a>
+                          <a href={link}>{link && link}</a>
                         </div>
                       </div>
                     </div>
@@ -420,11 +407,11 @@ export default function ChattingList({
                     </div>
                   </OpponentChattingText>
                 );
-              } else if (item.type === "CARD") {
+              } else if (item.type === ChatMessageType.Card) {
                 return (
                   <OpponentChattingText key={index}>
                     <div className="content">
-                      {checkName() && <span>{item.author.name}</span>}
+                      {checkName() && <span>{item?.author?.name}</span>}
                       <div className="chat">
                         <div className="text">
                           <span>타입:카드</span>
@@ -444,7 +431,7 @@ export default function ChattingList({
                 return (
                   <OpponentChattingText key={index}>
                     <div className="content">
-                      {checkName() && <span>{item.author.name}</span>}
+                      {checkName() && <span>{item?.author?.name}</span>}
                       <div className="chat">
                         <div className="text">
                           <span>{item.message}</span>

@@ -1,54 +1,34 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { styled } from "styled-components";
-import { useMutation, useQuery } from "@apollo/client";
-import MYBUSINESSCHATCHANNELS from "../../graphql/preowned/query/my-business-chat-channels";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatDetail from "./[id]";
-import READCHATMESSAGE from "../../graphql/preowned/mutation/read-business-chat-message";
-import BUSINESSCHATCHANNELS from "../../graphql/preowned/query/business-chat-channel";
 import { formatDate } from "../../function/format-date";
-import Spinner from "../../assets/img/spinner.gif";
+import Spinner from "../../assets/img/spinner_white.gif";
 import { Pc } from "../../responsive";
+import {
+  MyBusinessChatChannelsDocument,
+  BusinessChatChannelDocument,
+  Order,
+  useMyBusinessChatChannelsQuery,
+  useReadBusinessChatMessagesMutation,
+} from "../../graphql/graphql";
 
-interface ChatChannel {
-  id: string;
-  unreadMessageCount: number;
-  updatedAt: string;
-  secondhand: {
-    images: [
-      {
-        url: string;
-      }
-    ];
-    author: {
-      id: string;
-      name: string;
-    };
-  };
-  lastMessage: {
-    id: string;
-    message: string;
-  };
-}
-interface ChatChannelEdge {
-  node: ChatChannel;
-}
 export default function Preowned() {
   const navigate = useNavigate();
   const params = useParams();
 
   const [channelId, setBtnActive] = useState<string>("");
 
-  const { data, loading } = useQuery(MYBUSINESSCHATCHANNELS, {
+  const { data, loading } = useMyBusinessChatChannelsQuery({
     variables: {
       sort: {
         updatedAt: {
-          order: "DESCENDING",
+          order: Order.Descending,
         },
       },
     },
   });
-  const [readMessage] = useMutation(READCHATMESSAGE);
+  const [readMessage] = useReadBusinessChatMessagesMutation();
 
   const edges = useMemo(() => {
     return data?.myBusinessChatChannels?.edges ?? [];
@@ -77,12 +57,12 @@ export default function Preowned() {
         <ActiveChattingList id={channelId}>
           <ListTitle>
             <h2>진행중인 채팅 목록</h2>
-            <span>{data?.myBusinessChatChannels?.totalCount}</span>
+            <span>{data?.myBusinessChatChannels.totalCount}</span>
           </ListTitle>
           {edges &&
-            edges.map((edge: ChatChannelEdge, i: number) => {
-              const item = edge.node;
-              const id = item.id;
+            edges.map((edge, i: number) => {
+              const item = edge?.node;
+              const id = item?.id;
 
               if (item === undefined) return <></>;
 
@@ -91,13 +71,13 @@ export default function Preowned() {
                   className={"list" + (id === channelId ? " active" : "")}
                   key={i}
                   onClick={() => {
-                    setBtnActive(id);
+                    setBtnActive(id!);
                     navigate(`/preowned/${id}`);
                     readMessage({
-                      variables: { channelId: id },
+                      variables: { channelId: id! },
                       refetchQueries: [
-                        MYBUSINESSCHATCHANNELS,
-                        BUSINESSCHATCHANNELS,
+                        BusinessChatChannelDocument,
+                        MyBusinessChatChannelsDocument,
                       ],
                     });
                   }}
@@ -117,7 +97,7 @@ export default function Preowned() {
                     </ChatContent>
                   </Content>
                   <div>
-                    <img src={item.secondhand?.images[0].url} alt="img" />
+                    <img src={item.secondhand?.images?.[0].url} alt="img" />
                   </div>
                 </List>
               );
@@ -141,7 +121,8 @@ export default function Preowned() {
   );
 }
 const Layout = styled.div`
-  width: 1280px;
+  width: 100%;
+  height: 100vh;
   margin: auto;
   background-color: #f9f9f9;
 

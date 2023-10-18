@@ -1,8 +1,7 @@
-import { useMutation } from "@apollo/client";
 import React, { useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import MUTATION_NAVER_SIGN_UP from "../../graphql/auth/mutation/naver-sign-up";
 import { useIsLoggedInContext } from "../../components/auth/provider";
+import { useSignUpNaverMutation } from "../../graphql/graphql";
 
 export default function NaverRedirect() {
   const navigate = useNavigate();
@@ -11,7 +10,7 @@ export default function NaverRedirect() {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const [, setLogin] = useIsLoggedInContext();
-  const [accessToken] = useMutation(MUTATION_NAVER_SIGN_UP);
+  const [accessToken] = useSignUpNaverMutation();
 
   useEffect(() => {
     if (!location.search) return;
@@ -23,7 +22,7 @@ export default function NaverRedirect() {
           },
         })
           .then((res) => {
-            if (res.data.signUpNaver.user.id) {
+            if (res?.data?.signUpNaver.user.id) {
               setLogin(res.data.signUpNaver.token.accessToken);
               navigate("/", {
                 replace: true,
