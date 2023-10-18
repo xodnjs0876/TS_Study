@@ -13832,7 +13832,7 @@ export type ReceiveBusinessChatMessageSubscriptionVariables = Exact<{
 }>;
 
 
-export type ReceiveBusinessChatMessageSubscription = { __typename?: 'Subscription', receiveBusinessChatMessage: { __typename?: 'BChatMessage', id: string, message?: string | null, author?: { __typename?: 'Member', name?: string | null } | null } };
+export type ReceiveBusinessChatMessageSubscription = { __typename?: 'Subscription', receiveBusinessChatMessage: { __typename?: 'BChatMessage', id: string, createdAt: any, deletedAt?: any | null, message?: string | null, type: ChatMessageType, unreadUserCount: number, payload?: { __typename?: 'ChatMessageCardTypePayload', image: { __typename?: 'File', url: string, size: number, filename: string } } | { __typename?: 'ChatMessageFileTypePayload', id: string, url: string, size: number, filename: string } | { __typename?: 'ChatMessageLinkTypePayload', link: string } | null, author?: { __typename?: 'Member', id: string, name?: string | null } | null, channel: { __typename?: 'BChatChannel', secondhand?: { __typename?: 'Secondhand', author: { __typename?: 'Member', id: string, name?: string | null } } | null, participants: Array<{ __typename?: 'BChatChannelParticipant', isMine: boolean, user: { __typename?: 'Member', id: string, name?: string | null } }> } } };
 
 
 export const GetKakaoAccessTokenDocument = gql`
@@ -14397,7 +14397,6 @@ export const BusinessChatMessagesDocument = gql`
           ... on ChatMessageFileTypePayload {
             id
             filename
-            id
             size
             url
           }
@@ -14529,9 +14528,47 @@ export const ReceiveBusinessChatMessageDocument = gql`
     subscription ReceiveBusinessChatMessage($channelId: ID!) {
   receiveBusinessChatMessage(channelId: $channelId) {
     id
+    createdAt
+    deletedAt
     message
+    type
+    payload {
+      ... on ChatMessageFileTypePayload {
+        id
+        url
+        size
+        filename
+      }
+      ... on ChatMessageCardTypePayload {
+        image {
+          url
+          size
+          filename
+        }
+      }
+      ... on ChatMessageLinkTypePayload {
+        link
+      }
+    }
     author {
+      id
       name
+    }
+    unreadUserCount
+    channel {
+      secondhand {
+        author {
+          id
+          name
+        }
+      }
+      participants {
+        isMine
+        user {
+          id
+          name
+        }
+      }
     }
   }
 }
