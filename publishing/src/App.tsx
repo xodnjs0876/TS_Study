@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { styled } from "styled-components";
 import { Route, Routes } from "react-router-dom";
 import Login from "./pages/auth/login";
@@ -6,6 +6,9 @@ import { AuthProvider } from "./components/auth/provider";
 import Preowned from "./pages/preowned/preowned";
 import ChatDetail from "./pages/preowned/[id]";
 import { Mobile, Pc } from "./responsive";
+import MainLayout from "./components/main-layout";
+import NotisDetail from "./pages/notis/detail/notice-detail";
+import Notification from "./pages/notis/notification";
 // import NotisDetail from "./pages/notis/detail/notice-detail";
 // import Notification from "./pages/notis/notification";
 // import NaverRedirect from "./pages/auth/naver";
@@ -30,14 +33,12 @@ export default function App() {
           </Routes>
         </Pc>
         {/* <Routes>
-            <Route Component={MainLayout}>
-              <Route path="/" Component={Notification} />
-              <Route path="/post/:id" Component={NotisDetail} />
-              <Route path="/oauth/" Component={Login} />
-            </Route>
-            <Route path="/oauth/kakao" Component={KaKaoRedirect} />
-            <Route path="/oauth/naver" Component={NaverRedirect} />
-          </Routes> */}
+          <Route Component={MainLayout}>
+            <Route path="/" Component={Notification} />
+            <Route path="/post/:id" Component={NotisDetail} />
+            <Route path="/oauth/" Component={Login} />
+          </Route>
+        </Routes> */}
       </Layout>
     </AuthProvider>
   );
